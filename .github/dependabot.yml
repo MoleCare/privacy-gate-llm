@@ -1,0 +1,13 @@
+version: 2
+updates:
+  # There are no Python dependencies to update: the package is standard library
+  # only, deliberately. If a requirements file ever appears, add a "pip"
+  # ecosystem here.
+
+  # Keeps pinned action SHAs current — without this, SHA pinning means staying
+  # on a stale version forever.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "github-actions"]

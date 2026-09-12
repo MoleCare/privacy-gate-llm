@@ -1,0 +1,20 @@
+{"id":"f-cln-001","label":"CLEAN","slice":"negative-schema","text":"add a soft-delete flag to the consultations table and update the read path first"}
+{"id":"f-cln-002","label":"CLEAN","slice":"negative-secrets-talk","text":"our API key rotation runbook says 90 days, should it be 30?"}
+{"id":"f-cln-003","label":"CLEAN","slice":"negative-dev","text":"the melanoma classifier's confusion matrix is in the notebook, format it as markdown"}
+{"id":"f-cln-004","label":"CLEAN","slice":"negative-dev","text":"why is the Kotlin coroutine leaking on screen rotation?"}
+{"id":"f-cln-005","label":"CLEAN","slice":"negative-dev","text":"write a Cypress test for the photo upload flow"}
+{"id":"f-cln-006","label":"CLEAN","slice":"negative-schema","text":"should the audit log store the clinician's user id or their email address?"}
+{"id":"f-cln-007","label":"CLEAN","slice":"negative-dev","text":"bump the Postgres driver and check the connection pool settings"}
+{"id":"f-cln-008","label":"CLEAN","slice":"negative-secrets-talk","text":"explain what a bearer token is and how rotation works"}
+{"id":"f-cln-009","label":"CLEAN","slice":"negative-policy","text":"the incident report says a photo was attached to a public issue by mistake"}
+{"id":"f-hlt-001","label":"HEALTH","slice":"semantic-health","text":"the gentleman who came in on Thursday has psoriasis across both elbows and asked whether the app handles it"}
+{"id":"f-hlt-002","label":"HEALTH","slice":"semantic-health","text":"I have had a strange itchy patch behind my ear for about three weeks now"}
+{"id":"f-hlt-003","label":"HEALTH","slice":"semantic-health","text":"her scan showed nothing but the consultant wants to review the mole on her ankle again in six months"}
+{"id":"f-hlt-004","label":"HEALTH","slice":"semantic-health","text":"one of our testers is on chemotherapy and says the UV warnings are frightening her"}
+{"id":"f-hlt-005","label":"HEALTH","slice":"semantic-health","text":"he mentioned his father died of melanoma at 58, which is why he signed up"}
+{"id":"f-sec-001","label":"SECRET","slice":"semantic-secret","text":"the staging bearer token is just the word tuesday plus the current month number"}
+{"id":"f-sec-002","label":"SECRET","slice":"semantic-secret","text":"I have set the postgres superuser password to Rowan-Harbour-42 on the new box"}
+{"id":"f-sec-003","label":"SECRET","slice":"semantic-secret","text":"the wifi at the clinic is written on the back of the router, it is GlassTundra7"}
+{"id":"f-pii-001","label":"PII","slice":"semantic-pii","text":"call him back on 07700 900512, he is at the Bracknell office until five"}
+{"id":"f-pii-002","label":"PII","slice":"semantic-pii","text":"the claimant lives two doors down from the pharmacy on Kingsley Road"}
+{"id":"f-pii-003","label":"PII","slice":"semantic-pii","text":"our new hire starts Monday, she is relocating from Gdansk with her two children"}

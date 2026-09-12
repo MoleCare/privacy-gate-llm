@@ -2,7 +2,13 @@
 # large. The numbers that matter are copied into docs/JOURNAL.md by hand, so the
 # record survives without the weights.
 runs/
-models/
+
+# Weights that are megabytes or gigabytes. The logistic head is neither: it is
+# about 3k floats, it is the deliverable, and it is committed in model/.
+models/hf/
+models/gguf/
+*.gguf
+*.safetensors
 
 __pycache__/
 *.py[cod]

@@ -1,0 +1,39 @@
+privacy-gate-llm
+Copyright 2026 Yauhen Bichel
+
+This product includes software developed as part of the MoleCare project
+(https://www.molecare.co.uk/).
+
+Licensed under the Apache License, Version 2.0. See LICENSE.
+
+--------------------------------------------------------------------------------
+Third-party components
+--------------------------------------------------------------------------------
+
+This repository contains no vendored third-party code and no Python
+dependencies beyond the standard library.
+
+At run time it calls an Ollama endpoint serving an embedding model. The default
+is BAAI/bge-m3 (https://huggingface.co/BAAI/bge-m3), which is distributed under
+the MIT Licence by the Beijing Academy of Artificial Intelligence. That model is
+neither included in nor redistributed by this repository; only the 1024-weight
+logistic head in model/ is ours.
+
+--------------------------------------------------------------------------------
+Test fixtures
+--------------------------------------------------------------------------------
+
+data/gold.jsonl and data/fresh.jsonl contain strings that are deliberately
+shaped like credentials and personal data. All of them are invented. Two are
+published placeholders owned by others and are reproduced here for the purpose
+they were published for:
+
+  AKIAIOSFODNN7EXAMPLE
+      Amazon Web Services' documentation placeholder access key ID.
+
+  07700 900xxx
+      Ofcom's reserved drama range for UK telephone numbers, which is never
+      allocated to a subscriber.
+
+No real person, patient, credential, or organisation appears in this repository.
+See SECURITY.md.

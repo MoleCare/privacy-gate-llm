@@ -1,0 +1,111 @@
+name: PR checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: tests (python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      # No install step and no dependencies on purpose: the package is standard
+      # library only. If this ever needs a `pip install`, that is a design
+      # change worth noticing in review.
+      - name: Unit tests
+        run: PYTHONPATH=src python -m unittest discover -s tests -v
+
+  data:
+    name: data integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      # The loader rejects unknown labels, repeated ids and missing fields. A
+      # silently dropped row would change a denominator, and every number in
+      # docs/JOURNAL.md is a ratio.
+      - name: Datasets load and validate
+        run: |
+          PYTHONPATH=src python - <<'PY'
+          from privacy_gate.dataset import load
+          for path, expected in (("data/gold.jsonl", 127), ("data/fresh.jsonl", 20)):
+              rows = load(path)
+              assert len(rows) == expected, f"{path}: {len(rows)} rows, expected {expected}"
+              print(f"{path}: {len(rows)} rows OK")
+          PY
+
+      - name: Head loads and has the documented shape
+        run: |
+          PYTHONPATH=src python - <<'PY'
+          import json
+          from privacy_gate.head import Model
+          raw = json.load(open("model/head-v0.json"))
+          model = Model.from_json(json.dumps(raw))
+          assert len(model.weights) == raw["dimensions"] == 1024, "unexpected head width"
+          assert len(model.mean) == len(model.stdev) == 1024
+          print("head OK:", raw["dimensions"], "dims, AUC", raw["cross_validated_auc"])
+          PY
+
+      # The gold set describes credentials and patient data, so it is exactly the
+      # kind of file where something real could be pasted by accident. These are
+      # the markers of the invented fixtures we allow; anything else that looks
+      # live should fail here rather than reach a public branch.
+      - name: No live-looking credentials outside the known fixtures
+        run: |
+          if grep -rnE 'AKIA[0-9A-Z]{16}' --include='*.jsonl' --include='*.py' --include='*.md' . \
+             | grep -v 'AKIAIOSFODNN7EXAMPLE'; then
+            echo "::error::an AWS key that is not the AWS documentation placeholder"
+            exit 1
+          fi
+          if grep -rnE 'sk-ant-api03-[A-Za-z0-9_-]{80,}' . ; then
+            echo "::error::something the length of a real Anthropic key"
+            exit 1
+          fi
+          echo "no live-looking credentials found"
+
+  lexical-baseline:
+    name: no-model baseline
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      # Needs no model, so CI can run it. It is also the gate against the gold
+      # set quietly becoming trivial: if hashed unigrams ever score above 0.90,
+      # the examples have started leaking their label through vocabulary and the
+      # neural numbers stop meaning anything.
+      - name: Lexical baseline stays in its expected band
+        run: |
+          PYTHONPATH=src python scripts/lexical_baseline.py --out /tmp/lexical.json
+          PYTHONPATH=src python - <<'PY'
+          import json
+          auc = json.load(open("/tmp/lexical.json"))["auc"]
+          print(f"lexical AUC {auc:.4f}")
+          assert 0.60 <= auc <= 0.90, (
+              f"lexical baseline {auc:.4f} outside 0.60-0.90. Above 0.90 means the "
+              "gold set became separable by vocabulary alone; below 0.60 means it "
+              "changed character. Either way the journal needs revisiting."
+          )
+          PY
