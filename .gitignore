@@ -1,0 +1,14 @@
+# Run artefacts: predictions, metrics, adapters, checkpoints. Regenerable, and
+# large. The numbers that matter are copied into docs/JOURNAL.md by hand, so the
+# record survives without the weights.
+runs/
+models/
+
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+.DS_Store
