@@ -36,6 +36,29 @@ has to be tested against:
 If you add an example, invent it. Never paste something real, not even expired,
 and never anything from a user, a ticket, or a log.
 
+## Secret scanning will flag the evaluation data, and that is expected
+
+Two fixtures trip GitHub's scanner, and both are meant to:
+
+| | |
+|---|---|
+| `rgx-007` | a JWT — the canonical jwt.io example header and payload, with a fabricated signature |
+| `rgx-008` | an RSA private key block whose body is base64 of an English sentence saying it is not a key |
+
+Neither can be defanged without breaking what it tests. The PRIV003 pattern this
+set is scored against needs two base64 segments to recognise a JWT, so a JWT
+fixture has to look like a JWT. And a private-key fixture whose body plainly
+reads "not a real key" stops reading as a secret to the *model* as well, which
+would make its `SECRET` label wrong rather than the fixture safe — the same trap
+that produced the mislabelled `rgx-009` (see `docs/JOURNAL.md` run 9).
+
+`.github/secret_scanning.yml` therefore excludes `data/gold.jsonl` and
+`data/fresh.jsonl`, and only those. `src/`, `scripts/` and `docs/` are still
+scanned, because a real credential committed there would be a real problem.
+
+**If an alert fires on anything outside `data/`, treat it as real until proven
+otherwise.** That is the entire reason for keeping the exclusion this narrow.
+
 ## Running the evaluation
 
 `scripts/rules_oracle.py` shells out to `llm-harness explain`, which decides
