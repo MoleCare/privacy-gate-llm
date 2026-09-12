@@ -1,0 +1,44 @@
+name: Celebrate merge
+
+# Comments a G-rated GIF and a thank-you when a pull request merges.
+#
+# The thank-you line is written by a model when one is configured, and by the
+# action's stdlib path when it is not.
+#
+#   LOCAL_MODEL            variable, e.g. small
+#   LOCAL_MODEL_BASE_URL   variable, e.g. http://127.0.0.1:11500/v1
+#   LOCAL_MODEL_API_KEY    secret, only needed off-loopback
+#   CI_RUNS_ON             variable, '["self-hosted","<label>"]'
+#
+# Point LOCAL_MODEL_BASE_URL at a gateway rather than at Ollama directly: it
+# takes role aliases instead of model tags, so swapping the model behind
+# `small` is a config change here rather than an edit to this file.
+#
+# A GitHub-hosted runner cannot reach a machine on a home LAN, so the model
+# path only works on a runner that can. Note that attaching a self-hosted
+# runner to a *public* repository is something GitHub advises against, since a
+# fork can propose workflow changes; neither workflow here checks out or runs
+# pull-request code, but the decision is still worth making deliberately.
+#
+# With all of them unset this runs on a GitHub-hosted runner with the bundled
+# GIFs and no model, which is a working default. Nothing breaks if the box is
+# off.
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  celebrate:
+    if: github.event.pull_request.merged && github.event.pull_request.user.type != 'Bot'
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
+    timeout-minutes: 10
+    steps:
+      - uses: YauhenBichel/merge-cheer@6daba95cfd238b1e8c823e193632678f295dc1a3 # v1.7.0
+        with:
+          model: ${{ vars.LOCAL_MODEL }}
+          model-base-url: ${{ vars.LOCAL_MODEL_BASE_URL }}
+          model-api-key: ${{ secrets.LOCAL_MODEL_API_KEY }}
