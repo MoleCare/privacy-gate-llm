@@ -66,6 +66,8 @@ generation step, and the output is a calibrated score, so catch against friction
 is a dial rather than whatever the model felt like saying.
 
 The whole gate is `bge-m3` plus **1024 weights and a bias** — `model/head-v0.json`.
+It costs **34–43 ms** per call at p50 and under 50 ms at p95, measured on a
+loaded shared box, and 18 ms per text when batched.
 
 ```python
 from privacy_gate.gate import Gate

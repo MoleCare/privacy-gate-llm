@@ -356,6 +356,48 @@ noise, not a trend.
 
 ---
 
+## Run 8 — latency, which was a blocking question (2026-09-12)
+
+A gate that runs inline on every request and adds a second to each one gets
+switched off, and a guard that is off protects nothing. That is the same failure
+as too much friction, reached from the other side, so it belongs in the journal
+next to the accuracy numbers rather than in a footnote.
+
+Measured end to end — embed, standardise, dot, compare — with
+`scripts/latency.py`, on a **shared box under real load** (1-minute load average
+4.86, an unrelated video encode running). A quiet-box figure would be a nicer
+number and a less useful one.
+
+| text size | n | median chars | p50 | p95 | max |
+|---|---|---|---|---|---|
+| short | 270 | 66 | **34 ms** | 44 ms | 302 ms |
+| typical | 325 | 92 | **36 ms** | 44 ms | 60 ms |
+| long | 40 | 482 | **43 ms** | 46 ms | 58 ms |
+
+Batched, which is the shape most callers should use: 16 texts in one call,
+282 ms total, **18 ms each**.
+
+Three things worth drawing out.
+
+**p95 is under 50 ms at every size.** On a loaded box. This is not close to the
+threshold where anyone would notice, let alone disable it.
+
+**Cost is nearly flat in length.** 482 characters costs 43 ms against 34 ms for
+66. A transformer encoder pays mostly for the forward pass, not the tokens, at
+these sizes — so gating a whole support queue costs about what gating one
+sentence does. That is the opposite of the chat-model path, where the buried
+examples were the expensive ones.
+
+**Cold start is 2.41 s**, and it is a model swap, not a per-request cost. It only
+appears when something else has evicted `bge-m3`. On a machine where the gate is
+the point, pin it.
+
+The single 302 ms outlier is the shared box, not the model: the same text at the
+same size has a 44 ms p95. Any caller should have a timeout and, per
+`SECURITY.md`, treat a timeout as **hold**.
+
+---
+
 ## Run 9 — fixing the rules instead of the model (2026-09-12)
 
 Runs 0 and 6 both noted the same thing: most of the composed system's avoidable
@@ -437,6 +479,7 @@ composition allowed releasing.
 
 `llm-harness` went from 133 to 148 tests.
 
+
 ---
 
 ## What is decided, and what is not
@@ -466,9 +509,10 @@ machine holding real patient data.
 1. **A larger, independently written evaluation set.** Ideally not by the same
    author. Real prompts from actual sessions would be better still, if they can
    be reviewed and redacted safely.
-2. **Latency, measured.** One `bge-m3` forward pass per request, on a box that is
-   sometimes heavily loaded. If the gate adds a second to every call it will
-   be turned off, whatever it catches.
+2. ~~**Latency, measured.**~~ **Done, run 8.** p95 under 50 ms at every text
+   size on a loaded box, 18 ms each when batched, and nearly flat in length.
+   Not a concern. Pin `bge-m3` where the gate matters, so the 2.4 s cold start
+   never lands on a user.
 3. **A decision on where it runs.** A remote Ollama is a network hop and a
    shared queue. The head is 3k floats and could run anywhere; the embedding
    model is the constraint.
