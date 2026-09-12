@@ -123,5 +123,5 @@
 {"id":"rgx-006","label":"SECRET","slice":"regex-visible","text":"DB_PASSWORD=hunter2correcthorsebattery"}
 {"id":"rgx-007","label":"SECRET","slice":"regex-visible","text":"token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abc"}
 {"id":"rgx-008","label":"SECRET","slice":"regex-visible","text":"-----BEGIN RSA PRIVATE KEY-----\nTUhJUyBJUyBOT1QgQSBSRUFMIEtFWSwgSVQgSVMgQSBURVNUIEZJWFRVUkU=\n-----END RSA PRIVATE KEY-----"}
-{"id":"rgx-009","label":"PII","slice":"regex-visible","text":"the account for ana.duarte@example.org cannot log in"}
+{"id":"rgx-009","label":"PII","slice":"regex-visible","text":"the account for ana.duarte@northgate.internal cannot log in"}
 {"id":"rgx-010","label":"HEALTH","slice":"regex-visible","text":"here is the mole photo data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD"}

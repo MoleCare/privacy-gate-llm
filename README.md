@@ -38,7 +38,7 @@ Measured on the 127-example gold set in `data/gold.jsonl`:
 
 | | catch rate | friction rate |
 |---|---|---|
-| regex ruleset alone | **13.9%** (10 of 72) | 5.5% |
+| regex ruleset alone | **13.9%** (10 of 72) | 1.8% |
 
 **62 of the 72 sensitive examples go straight through.** That is the gap this
 model is for.
@@ -49,10 +49,10 @@ Not a fine-tuned chat model. **An embedding model and a logistic head.**
 
 | | AUC | catch | friction |
 |---|---|---|---|
-| regex ruleset alone | — | 13.9% | 5.5% |
-| hashed word unigrams | 0.7391 | 98% | 85.5% |
+| regex ruleset alone | — | 13.9% | 1.8% |
+| hashed word unigrams | 0.7429 | 98% | 78.2% |
 | `Qwen3.5-0.8B`, prompted | 0.4609 | *at chance* | |
-| **`bge-m3` + logistic head** | **0.9924** | **100%** | **16.4%** |
+| **`bge-m3` + logistic head** | **0.9927** | **100%** | **14.5%** |
 
 Five-fold cross-validated: every score comes from a head that never saw that
 example. **All 72 sensitive examples caught, no leaks.** On 20 further sentences
@@ -72,7 +72,7 @@ from privacy_gate.gate import Gate
 
 gate = Gate.load("model/head-v0.json")
 gate.decide("the woman from Tuesday's clinic has a 7mm lesion on her shoulder")
-# Decision(hold=True, score=4.7, threshold=-0.455)
+# Decision(hold=True, score=4.7, threshold=-0.519)
 ```
 
 **It is not ready to ship.** 147 examples written by one person in one day is
