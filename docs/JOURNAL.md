@@ -137,19 +137,74 @@ expressible at all before anyone spends that time.
 
 ---
 
-## Run 4 — is it the size, or the task? (2026-09-12, in progress)
+## Run 4 — is it the size, or the task? (2026-09-12, BLOCKED)
 
-If a large model scores well, the taxonomy and prompt are sound and the problem
-is capacity: the answer is then a bigger small model, or distillation from the
-large one. If a large model *also* fails, the fault is mine — in the boundary,
-the prompt, or the gold labels — and no amount of training fixes that.
+**This is the run that decides what happens next, and it has no number yet.**
 
-A first attempt at `gpt-oss:20b` returned AUC exactly 0.5000 with a single
-distinct margin. That is not a result, it is a broken measurement: neither `KEEP`
-nor `SEND` appeared anywhere in the top 20 tokens at the first generated position
-for any of the 127 examples, so every margin was the same floor value. `gpt-oss`
-uses the harmony format and puts control tokens where the answer is expected.
+If a large model scores well, the taxonomy and the prompt are sound and the
+problem is capacity: the answer is then a larger small model, or distillation
+from the large one. If a large model *also* fails, the fault is in the boundary,
+the prompt, or the gold labels — and no amount of training fixes that. Nothing
+should be trained until this is known.
 
-The extraction needs to scan generated positions for the first one carrying the
-answer rather than assuming position 0. Until it does, there is no ceiling
-number, and Run 4 is open.
+Two attempts, neither of which produced a usable number.
+
+**`gpt-oss:20b`** returned AUC of exactly 0.5000 with a single distinct margin.
+That is a broken measurement, not a result: neither `KEEP` nor `SEND` appeared in
+the top 20 tokens at generated position 0 for any of the 127 examples, so every
+margin hit the same floor. `gpt-oss` uses the harmony format and puts control
+tokens where the answer is expected. Fixed — `answer_position()` now scans for
+the position actually deciding between the two words, and raises rather than
+returning a floor. Not re-run.
+
+**`gemma4:31b`** hangs. With `logprobs` it never returns; without them it managed
+one example in ten minutes, and a bare "Say ok" did not answer inside 95 seconds
+despite the model being resident with 21 GB in VRAM.
+
+That is not a bug in this repository. yserver was saturated:
+
+| | |
+|---|---|
+| load average | 18.5 on 32 cores |
+| `sd-cli` | 1470% CPU, generating images for `tiktok-posts-work` |
+| another client | `/v1/chat/completions` calls of 6, 7 and 13 minutes |
+| Ollama | started with `-np 1`, so everything serialises behind them |
+
+Under that, requests returned `500` after two minutes. The runs were stopped
+rather than left to add to the queue, and nothing was unloaded or re-pinned.
+
+**To resume:** check the box is quiet (`uptime`, and no `sd-cli` in `ps`), then
+
+```bash
+ssh yserver 'cd ~/privacy-gate-llm && PYTHONPATH=src python3 -m privacy_gate.calibrate \
+    --model gemma4:31b --rules data/rules-baseline.json --out runs/cal-31b.json'
+```
+
+It resumes from `runs/cal-31b.json.partial.jsonl`, so an interrupted run costs
+nothing. Try `--model qwen3-coder:30b` if gemma4's 256k vocabulary turns out to
+be what makes `logprobs` hang; `qwen3.6:35b` is the other candidate.
+
+---
+
+## What is decided, and what is not
+
+**Decided.** The rules miss 62 of 72 sensitive examples, so the gap is real and
+worth closing. `Qwen3.5-0.8B` does not close it by prompting: AUC 0.4609, at
+chance, measured three ways.
+
+**Not decided, and blocking everything downstream.** Whether a capable model can
+do this task at all on this gold set. Until Run 4 has a number, there is no way
+to tell a capacity problem from a specification problem, and training either way
+would be guessing.
+
+**If Run 4 comes back strong** (AUC above roughly 0.9), the path is: generate a
+training set of a few thousand examples by construction — the generator is told
+the category, so the label is known a priori and never guessed, the same trick
+java-dsa-harness uses to avoid hand-written expectations — then either LoRA a
+larger small base (Qwen3.5 2B or 4B) or, probably better for a classifier, put a
+logistic head on `bge-m3` embeddings, which is already on the box. An embedding
+plus a head has no generation step at all, which is the right shape for something
+that must run inline on every request.
+
+**If Run 4 comes back weak**, the gold set or the boundary is wrong, and the fix
+is in `docs/TAXONOMY.md`, not in a training run.
