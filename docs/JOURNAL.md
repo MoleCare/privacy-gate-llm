@@ -15,6 +15,12 @@ Two numbers recur:
 All runs use `data/gold.jsonl`: 127 hand-written examples, 55 clean and 72
 sensitive. Greedy decoding, `temperature 0`, `seed 0`, thinking off.
 
+**Every figure here was re-measured after run 9**, which changed one example and
+the ruleset it is scored against. Numbers describe the data and rules as they
+stand, not as they were on the day each run was first written. Run 0 is the
+exception and is deliberately left at its original values, because it is the
+measurement that motivated the project.
+
 ---
 
 ## Run 0 — what the regex rules already do (2026-09-12)
@@ -39,6 +45,10 @@ The ruleset behaves exactly as designed, and the design has a shape:
 So the gap is not a weakness in the patterns. It is what patterns are.
 **62 sensitive examples out of 72 go straight through**, and that is the whole
 opportunity.
+
+*Run 9 later cut the 5.5% friction to 1.8% by adding exceptions upstream, with
+no loss of catch. The 13.9% did not move, and could not: it is what a pattern
+can see.*
 
 ---
 
@@ -209,13 +219,13 @@ them are sensitive. Median is the honest statistic here.
 
 ### The baseline
 
-> ### AUC 0.7391
+> ### AUC 0.7429
 
 | target | friction |
 |---|---|
-| catch ≥ 98% | 85.5% |
-| catch ≥ 95% | 65.5% |
-| catch ≥ 90% | 63.6% |
+| catch ≥ 98% | 78.2% |
+| catch ≥ 95% | 63.6% |
+| catch ≥ 90% | 58.2% |
 
 Real signal, and useless as a gate. Words like *biopsy*, *passphrase* and
 *lesion* genuinely carry information, which is why it beats chance, but no
@@ -240,11 +250,11 @@ represent.
 
 ### Two things this settles
 
-**The bar is 0.7391, not 0.5.** Any embedding or fine-tuned model has to beat a
+**The bar is 0.7429, not 0.5.** Any embedding or fine-tuned model has to beat a
 baseline that costs nothing to run. Quoting a neural result against the regex
 ruleset alone would have overstated it.
 
-**`Qwen3.5-0.8B` is worse than a bag of words.** AUC 0.4609 against 0.7391. That
+**`Qwen3.5-0.8B` is worse than a bag of words.** AUC 0.4609 against 0.7429. That
 is a sharper statement of run 3 than run 3 could make on its own.
 
 **And the gold set holds up.** Had this scored 0.98, the set would have been too
@@ -261,33 +271,34 @@ says the difficulty is.
 those vectors decides. Five-fold cross-validated, so every score below comes from
 a head that never saw that example. L2 = 1.0.
 
-> ### AUC 0.9924
+> ### AUC 0.9927
 
 The model on its own, which is the honest view of what the head contributes:
 
 | threshold | catch | friction | leaks |
 |---|---|---|---|
-| −1.385 | **100.0%** | **16.4%** | **0** |
-| −0.455 | 98.6% | 12.7% | 1 |
-| −0.232 | 97.2% | 9.1% | 2 |
+| −0.823 | **100.0%** | **14.5%** | **0** |
+| −0.519 | 98.6% | 12.7% | 1 |
+| −0.065 | 97.2% | 3.6% | 2 |
 
-**Every one of the 72 sensitive examples is caught at 16.4% friction, with no
+**Every one of the 72 sensitive examples is caught at 14.5% friction, with no
 leaks at all.** For comparison, on the same set:
 
 | | AUC | catch | friction |
 |---|---|---|---|
-| regex ruleset | — | 13.9% | 5.5% |
-| hashed unigrams | 0.7391 | 98% | 85.5% |
+| regex ruleset | — | 13.9% | 1.8% |
+| hashed unigrams | 0.7429 | 98% | 78.2% |
 | `Qwen3.5-0.8B` prompted | 0.4609 | — | — |
-| **bge-m3 + logistic head** | **0.9924** | **100%** | **16.4%** |
+| **bge-m3 + logistic head** | **0.9927** | **100%** | **14.5%** |
 
 ### The remaining friction is mostly not the model's
 
 At the 98.6% operating point the composed system holds back 10 clean examples.
-**Three of those are the regex rules, not the head** — `cln-050`, `cln-051` and
+**Three of those were the regex rules, not the head** — `cln-050`, `cln-051` and
 `cln-052`, the documentation-placeholder cases from `docs/TAXONOMY.md` D3. The
-head scored all three comfortably clean (−4.29, −3.40, −1.73) and cannot release
-them, because it may only add holds. Fixing those means changing `v1.yaml`.
+head scored all three comfortably clean and cannot release them, because it may
+only add holds. Run 9 fixed two of the three upstream; `cln-052` remains and
+cannot be fixed by a pattern.
 
 The head's own seven: a null-check in a `Patient` entity, a photo retention
 policy question, GitHub PAT rotation, an environment-variable placeholder, a CI
@@ -345,15 +356,98 @@ noise, not a trend.
 
 ---
 
+## Run 9 — fixing the rules instead of the model (2026-09-12)
+
+Runs 0 and 6 both noted the same thing: most of the composed system's avoidable
+friction was not the model. Three clean examples were held back by the *regex
+ruleset*, and the head scored all three comfortably clean and could not release
+them, because it may only add holds.
+
+So the fix belonged upstream, in `llm-harness`.
+
+### It was not "a `v1.yaml` change", as this journal previously claimed
+
+That claim was wrong and worth correcting. The engine had no exception
+mechanism at all: `firstMatch` fired on any pattern match, so there was nowhere
+to express "this form is not a hit". It needed a small engine feature.
+
+### Exceptions apply per match, never per prompt
+
+This is the whole safety of the feature. If one allowed form could quiet a rule,
+then
+
+> "mail real.person@gmail.com, the fixture is test@example.com"
+
+would scan clean — the fixture would excuse the real address beside it, and the
+exception would have turned a working guard into a bypass. So every match is
+enumerated and judged alone, and the rule still fires when any one survives.
+Exceptions are also anchored, so `example\.com` cannot excuse
+`victim@example.com.attacker.net`.
+
+Two exceptions were added, both standards-based and narrow:
+
+| rule | excuses | why it is safe |
+|---|---|---|
+| PRIV003 | `AKIAIOSFODNN7EXAMPLE` | AWS's own published documentation key. Not a credential and cannot become one. |
+| PRIV005 | addresses at RFC 2606 / RFC 6761 reserved names | `example.com`, `.test`, `.invalid`, `.localhost` are never delegated, so no message reaches a person and no address identifies one. |
+
+### It found a second bug, and then a third
+
+**The generated ruleset dropped the field.** `scripts/build-rules.ts` picks
+fields explicitly when building the JSON the engine actually reads, so `except`
+was silently discarded and the exceptions did nothing. The YAML looked right and
+the behaviour was unchanged.
+
+**The conformance test did not test the router.** It decided whether a rule
+fires with its own `rule.compiled.some(p => p.test(text))`, which skipped both
+the folding in `scan.ts` and, once they existed, the exceptions. A fixture could
+pass while production disagreed with it. There is now one exported function,
+`matchIndex`, used by the router and by the test, and a test asserting the two
+agree. A guard whose tests do not exercise the guard is worse than no tests,
+because it reads as evidence.
+
+### And it found a mislabelled example here
+
+With the exceptions live, `rgx-009` stopped firing:
+
+> "the account for ana.duarte@example.org cannot log in" — labelled `PII`
+
+`example.org` is reserved, so it cannot be anyone's mailbox — and
+`docs/TAXONOMY.md` rule 1 says documentation samples are `CLEAN`. **The label
+was wrong by this project's own boundary**, and only looked right because the
+rules over-fired. The same flaw sat in llm-harness's own fixture, which used a
+reserved domain to stand for a real address.
+
+Fixed by changing the example's text to a non-reserved domain, which is what it
+always meant, rather than by relabelling it to make a number look better.
+
+### Result
+
+| | catch | friction |
+|---|---|---|
+| rules before | 13.9% | 5.5% |
+| **rules after** | **13.9%** | **1.8%** |
+
+**Two thirds of the rules' over-firing removed, with no loss of catch.** The one
+remaining case is `cln-052`, `"patient_id": 12345` in an OpenAPI example, and it
+cannot be fixed by a pattern: nothing in the text distinguishes it from a real
+record other than the word "example" elsewhere in the sentence. That one is the
+model's to catch, and it does — it scores it clean, and would release it if the
+composition allowed releasing.
+
+`llm-harness` went from 133 to 148 tests.
+
+---
+
 ## What is decided, and what is not
 
 **Decided.** The rules miss 62 of 72 sensitive examples, so the gap is real. The
 gold set is not separable by length or by vocabulary alone. Prompting a small
 chat model does not work: `Qwen3.5-0.8B` scores 0.4609, at chance, measured three
-ways, and worse than hashed unigrams at 0.7391.
+ways, and worse than hashed unigrams at 0.7429.
 
-**Embeddings plus a logistic head do work.** AUC 0.9924 cross-validated, every
-sensitive example caught at 16.4% friction with zero leaks, and 18 of 20 on
+**Embeddings plus a logistic head do work.** AUC 0.9927 cross-validated, every
+sensitive example caught at 14.5% friction with zero leaks, and 18 of 20 on
 sentences written after training with all 11 sensitive ones caught. The
 architecture question is answered, and the answer is not the one the project
 started out assuming.
@@ -378,9 +472,10 @@ machine holding real patient data.
 3. **A decision on where it runs.** A remote Ollama is a network hop and a
    shared queue. The head is 3k floats and could run anywhere; the embedding
    model is the constraint.
-4. **The three D3 rules cases.** They are the whole of the composed system's
-   avoidable friction, and the head already scores them correctly. That is a
-   `v1.yaml` change, not a model change.
+4. ~~**The three D3 rules cases.**~~ **Two of three done, run 9.** Fixed
+   upstream in `llm-harness` with per-match rule exceptions; friction there fell
+   from 5.5% to 1.8% with no loss of catch. `cln-052` remains and cannot be
+   fixed by a pattern.
 5. **`docs/TAXONOMY.md` D1 and D2 confirmed by the owner.** The model has learned
    whatever those defaults said, so changing them later means relabelling and
    refitting.
