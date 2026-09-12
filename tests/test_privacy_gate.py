@@ -13,6 +13,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from privacy_gate.calibrate import NoAnswerPosition, Scored, answer_position, auc, pick, sweep
 from privacy_gate.dataset import load
 from privacy_gate.evaluate import Prediction, score
 from privacy_gate.labels import BINARY, CLEAN, HEALTH, KEEP, SEND, holds, normalise
@@ -130,6 +131,65 @@ class TestScoring(unittest.TestCase):
     def test_label_accuracy_is_absent_in_binary_mode(self) -> None:
         result = score([prediction("1", HEALTH, KEEP), prediction("2", CLEAN, SEND)])
         self.assertIsNone(result["model"]["label_accuracy_on_caught"])
+
+
+def scored(id: str, margin: float, sensitive: bool) -> Scored:
+    return Scored(
+        id=id,
+        slice="s",
+        gold=HEALTH if sensitive else CLEAN,
+        sensitive=sensitive,
+        margin=margin,
+        keep_logprob=0.0,
+        send_logprob=0.0,
+    )
+
+
+class TestCalibration(unittest.TestCase):
+    def test_auc_of_a_perfect_ranking(self) -> None:
+        self.assertEqual(auc([scored("a", 2.0, True), scored("b", -2.0, False)]), 1.0)
+
+    def test_auc_of_an_inverted_ranking(self) -> None:
+        self.assertEqual(auc([scored("a", -2.0, True), scored("b", 2.0, False)]), 0.0)
+
+    def test_ties_are_half_a_win(self) -> None:
+        self.assertEqual(auc([scored("a", 1.0, True), scored("b", 1.0, False)]), 0.5)
+
+    def test_sweep_reaches_both_extremes(self) -> None:
+        points = sweep([scored("a", 1.0, True), scored("b", -1.0, False)])
+        self.assertEqual(points[0]["catch_rate"], 1.0)  # cut below everything
+        self.assertEqual(points[-1]["catch_rate"], 0.0)  # cut above everything
+
+    def test_pick_minimises_friction_subject_to_catch(self) -> None:
+        chosen = pick(sweep([scored("a", 1.0, True), scored("b", -1.0, False)]), 1.0)
+        assert chosen is not None
+        self.assertEqual(chosen["catch_rate"], 1.0)
+        self.assertEqual(chosen["friction_rate"], 0.0)
+
+    def test_pick_returns_nothing_when_catch_is_unreachable(self) -> None:
+        # An inverted ranking cannot reach full catch without full friction.
+        points = sweep([scored("a", -1.0, True), scored("b", 1.0, False)])
+        chosen = pick(points, 1.0)
+        assert chosen is not None
+        self.assertEqual(chosen["friction_rate"], 1.0)
+
+    def test_answer_position_skips_control_tokens(self) -> None:
+        """gpt-oss emits harmony tokens where the answer is expected."""
+        positions = [
+            {"<|channel|>": -0.1, "<|start|>": -2.0},
+            {"KEEP": -0.5, "SEND": -1.5},
+        ]
+        self.assertEqual(answer_position(positions), {"KEEP": -0.5, "SEND": -1.5})
+
+    def test_answer_position_accepts_a_quote_first(self) -> None:
+        positions = [{"SEND": -0.2, "KEEP": -1.0}]
+        self.assertEqual(answer_position(positions)["SEND"], -0.2)
+
+    def test_answer_position_raises_rather_than_returning_a_floor(self) -> None:
+        """A silent floor produced a tidy, meaningless AUC of 0.5 for 127
+        examples. A broken measurement has to fail loudly."""
+        with self.assertRaises(NoAnswerPosition):
+            answer_position([{"<|channel|>": -0.1}, {"analysis": -0.2}])
 
 
 class TestPrompt(unittest.TestCase):

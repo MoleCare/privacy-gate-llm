@@ -27,6 +27,16 @@ class Reply:
     content: str
     seconds: float
     eval_count: int
+    #: One {token: logprob} map per generated position, when logprobs were asked
+    #: for. These are the model's raw preferences: Ollama reports them before the
+    #: format grammar is applied, so tokens the grammar forbids still appear.
+    #: That is what makes them usable as a calibrated score rather than just a
+    #: restatement of the sampled answer.
+    #:
+    #: Every position is kept, not only the first. `gpt-oss` puts harmony control
+    #: tokens where the answer is expected, and a reader that assumed position 0
+    #: silently scored 127 examples as identical (JOURNAL, run 4).
+    position_logprobs: list[dict[str, float]] | None = None
 
 
 class OllamaError(RuntimeError):
@@ -74,6 +84,7 @@ def chat(
     # milliseconds. A tight timeout here fails the run for a queueing reason.
     timeout: float = 900.0,
     predict: int = 8,
+    logprobs: int = 0,
 ) -> Reply:
     """One greedy classification. Thinking is off: this is a lookup, not a puzzle,
     and a thinking model would spend hundreds of tokens to say one word."""
@@ -87,12 +98,26 @@ def chat(
     }
     if schema is not None:
         payload["format"] = schema
+    if logprobs:
+        payload["logprobs"] = True
+        payload["top_logprobs"] = logprobs
     started = time.monotonic()
     body = _post(url, "/api/chat", payload, timeout)
+
+    per_position: list[dict[str, float]] | None = None
+    if logprobs:
+        per_position = [
+            {
+                entry["token"]: float(entry["logprob"])
+                for entry in position.get("top_logprobs", [])
+            }
+            for position in (body.get("logprobs") or [])
+        ]
     return Reply(
         content=body.get("message", {}).get("content", ""),
         seconds=time.monotonic() - started,
         eval_count=int(body.get("eval_count") or 0),
+        position_logprobs=per_position,
     )
 
 
