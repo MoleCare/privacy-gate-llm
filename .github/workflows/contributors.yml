@@ -1,0 +1,114 @@
+name: Contributors
+
+# Keeps the README contributors wall in step with the GitHub contributors API
+# (commit order, bots omitted). Names are never hand-maintained, because a
+# stale list is worse than none.
+#
+# It runs after every push to main and commits the refreshed wall straight back
+# to main — no separate pull request. That is the only place it can run and be
+# right. Running it on pull requests has two holes: a fork PR skips the job
+# entirely, because the job cannot push to a fork, so the people the wall exists
+# to thank are never added by their own PR; and a same-repo PR carries the wall
+# as it was when its branch last ran, so merging a fork PR in between is undone
+# by the later merge. A run on main after the merge sees every commit, so
+# neither can happen.
+#
+# Writing to main goes through a deploy key, CONTRIBUTORS_DEPLOY_KEY, which is
+# a bypass actor on the main ruleset alongside the owner. GitHub will not accept
+# its own Actions app as a bypass actor on this org's rulesets, and a personal
+# token is not an option, so a write key scoped to this one repository is the
+# narrowest thing that works.
+#
+# A push made with a deploy key does start workflows, unlike one made with
+# GITHUB_TOKEN, so the commit carries [skip ci]: neither CI nor this job runs
+# again for a README-only change.
+#
+# The contributors API is cached and can lag a fresh commit, so a daily run
+# catches anything the post-merge run saw too early.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "23 6 * * *"
+  workflow_dispatch:
+
+# The push uses the deploy key, so the token only needs to read: the action
+# calls the contributors API with it.
+permissions:
+  contents: read
+
+# Every run recomputes the wall from scratch, so the newest one can safely
+# replace an older one still in flight.
+concurrency:
+  group: contributors
+  cancel-in-progress: true
+
+jobs:
+  readme:
+    # Belt and braces: [skip ci] already stops the bot's own commit from
+    # starting another run.
+    if: github.actor != 'github-actions[bot]'
+    # ubuntu-latest unless the CI_RUNS_ON repository variable says otherwise.
+    # A GitHub-hosted runner cannot see a machine on a home LAN, so the local
+    # model below is only reachable from a runner that can. See the note in
+    # celebrate-merge.yml before attaching one to a public repository.
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
+    timeout-minutes: 10
+    steps:
+      # Always main, whatever the run was started from, so a manual run from
+      # any branch repairs main rather than a side branch. Named, not read from
+      # github.event.repository: a scheduled run's payload has no repository,
+      # so that expression is empty at 06:23 every day.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          ssh-key: ${{ secrets.CONTRIBUTORS_DEPLOY_KEY }}
+          persist-credentials: true
+
+      # Captions come from a local model when one is configured, and from the
+      # action's stdlib path when it is not. Unset by default, so a hosted
+      # runner still produces a correct wall, just without written captions.
+      # A gateway on loopback needs no key; off-loopback it returns 401, so
+      # LOCAL_MODEL_API_KEY exists for that case.
+      - name: Fill README contributors
+        uses: YauhenBichel/readme-contributors@25e0b067b5edec34206283138657dc8a8713d89a # reuse captions
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          format: html
+          model: ${{ vars.LOCAL_MODEL }}
+          model-base-url: ${{ vars.LOCAL_MODEL_BASE_URL }}
+          model-api-key: ${{ secrets.LOCAL_MODEL_API_KEY }}
+
+      - name: Commit the wall to main
+        env:
+          BRANCH: main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md .github/contributors.svg .github/faces
+          if git diff --cached --quiet; then
+            echo "The wall already matches the contributors API."
+            exit 0
+          fi
+
+          # Name who was added, so the history says why the commit exists.
+          added=$(git diff --cached --name-only --diff-filter=A -- .github/faces \
+            | sed 's#.*/##; s#\.svg$##' | paste -sd, - | sed 's/,/, /g')
+          git commit -m "docs: refresh README contributors${added:+ (adds $added)} [skip ci]"
+
+          # main can move while this runs. The commit only touches the wall,
+          # which was just recomputed, so replaying it on the new tip is safe.
+          for attempt in 1 2 3; do
+            if git push origin "HEAD:$BRANCH"; then
+              echo "Wall updated on $BRANCH${added:+: added $added}."
+              exit 0
+            fi
+            if ! git pull --rebase origin "$BRANCH"; then
+              git rebase --abort || true
+              echo "::error::main changed the wall's files while this ran, and the rebase conflicted. The next run will recompute it."
+              exit 1
+            fi
+          done
+          echo "::error::Could not push the refreshed wall to $BRANCH. Check that CONTRIBUTORS_DEPLOY_KEY is set, is a write deploy key, and that deploy keys can bypass the $BRANCH ruleset."
+          exit 1

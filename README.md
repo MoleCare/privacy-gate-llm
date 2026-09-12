@@ -5,6 +5,7 @@
 [![Dependencies](https://img.shields.io/badge/dependencies-none-lightgrey.svg)](#running-it)
 [![Model on HF](https://img.shields.io/badge/%F0%9F%A4%97-model-yellow.svg)](https://huggingface.co/YauhenBichel/privacy-gate-llm)
 [![Demo](https://img.shields.io/badge/%F0%9F%A4%97-demo-yellow.svg)](https://huggingface.co/spaces/YauhenBichel/privacy-gate-llm-demo)
+[![Contributors](https://img.shields.io/github/contributors/MoleCare/privacy-gate-llm)](https://github.com/MoleCare/privacy-gate-llm#contributors)
 
 A very small model that answers one question about a piece of text:
 
@@ -173,6 +174,19 @@ anything real. `docs/TAXONOMY.md` lists the decisions still open.
 
 Contributions that would help most are in `CONTRIBUTING.md`; the short version is
 **more hard negatives** — text that looks sensitive and is not.
+
+## Contributors
+
+Thank you to everyone who has helped privacy-gate-llm. The most useful
+contribution is a **hard negative**: text that looks sensitive and is not.
+
+<!-- readme: contributors,bots/- -start -->
+<!-- readme: contributors,bots/- -end -->
+
+The list is filled by [Contributors](./.github/workflows/contributors.yml) from
+GitHub commits, bots omitted — never hand-maintained, because a stale list is
+worse than none. [Contributor graph](https://github.com/MoleCare/privacy-gate-llm/graphs/contributors) ·
+[good first issue](https://github.com/MoleCare/privacy-gate-llm/labels/good%20first%20issue)
 
 ## Licence
 
