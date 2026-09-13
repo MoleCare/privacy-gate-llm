@@ -2,10 +2,18 @@
 # SPDX-License-Identifier: Apache-2.0
 """Record what the existing regex ruleset already catches.
 
-`llm-harness explain` decides without sending anything anywhere, so this is safe
-to run over a file of fixtures that contains fake credentials. It has to run on
-the machine where llm-harness is installed; the result is committed as
-`data/rules-baseline.json` so the evaluation on the server needs no Node.
+`llm-harness explain` decides locally, so this is safe to run over a file of
+fixtures that contains fake credentials.
+
+It is run with `HARNESS_GATE=0` for two reasons. This measurement is of the
+*patterns* and nothing else, and llm-harness now has an optional semantic step
+that would otherwise make an embedding call per example — slower, and no longer
+strictly true that nothing leaves the process. Pinning it off keeps the baseline
+what it says it is.
+
+It has to run on the machine where llm-harness is installed. The result is
+committed as `data/rules-baseline.json`, so the evaluation on the server needs
+no Node.
 
 Usage:  python3 scripts/rules_oracle.py [--data data/gold.jsonl]
 """
@@ -14,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -35,6 +44,8 @@ def privacy_verdict(text: str) -> tuple[bool, str | None]:
             capture_output=True,
             text=True,
             timeout=60,
+            # Measure the patterns alone. See the module docstring.
+            env={**os.environ, "HARNESS_GATE": "0"},
         )
     finally:
         Path(path).unlink(missing_ok=True)
