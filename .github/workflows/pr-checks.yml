@@ -48,7 +48,7 @@ jobs:
         run: |
           PYTHONPATH=src python - <<'PY'
           from privacy_gate.dataset import load
-          for path, expected in (("data/gold.jsonl", 127), ("data/fresh.jsonl", 20)):
+          for path, expected in (("data/gold.jsonl", 206), ("data/fresh.jsonl", 20), ("data/short-probe.jsonl", 21)):
               rows = load(path)
               assert len(rows) == expected, f"{path}: {len(rows)} rows, expected {expected}"
               print(f"{path}: {len(rows)} rows OK")
@@ -59,11 +59,12 @@ jobs:
           PYTHONPATH=src python - <<'PY'
           import json
           from privacy_gate.head import Model
-          raw = json.load(open("model/head-v0.json"))
-          model = Model.from_json(json.dumps(raw))
-          assert len(model.weights) == raw["dimensions"] == 1024, "unexpected head width"
-          assert len(model.mean) == len(model.stdev) == 1024
-          print("head OK:", raw["dimensions"], "dims, AUC", raw["cross_validated_auc"])
+          for path in ("model/head-v1.json", "model/head-v0.json"):
+              raw = json.load(open(path))
+              model = Model.from_json(json.dumps(raw))
+              assert len(model.weights) == raw["dimensions"] == 1024, f"{path}: unexpected head width"
+              assert len(model.mean) == len(model.stdev) == 1024
+              print(f"{path} OK:", raw["dimensions"], "dims, AUC", raw["cross_validated_auc"])
           PY
 
       # The gold set describes credentials and patient data, so it is exactly the

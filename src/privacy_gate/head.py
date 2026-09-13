@@ -321,7 +321,7 @@ def main(argv: list[str] | None = None) -> int:
                 threshold=chosen["threshold"] if chosen else 0.0,
                 note=(
                     "score(text) > threshold means hold. Cross-validated AUC and "
-                    "the operating point come from docs/JOURNAL.md run 6."
+                    "the operating point are recorded in docs/JOURNAL.md."
                 ),
             )
             + "\n"
