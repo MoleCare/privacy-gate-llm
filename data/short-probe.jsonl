@@ -1,0 +1,21 @@
+{"id": "p-cln-001", "label": "CLEAN", "slice": "short-probe", "text": "ok"}
+{"id": "p-cln-002", "label": "CLEAN", "slice": "short-probe", "text": "yes"}
+{"id": "p-cln-003", "label": "CLEAN", "slice": "short-probe", "text": "continue"}
+{"id": "p-cln-004", "label": "CLEAN", "slice": "short-probe", "text": "thanks!"}
+{"id": "p-cln-005", "label": "CLEAN", "slice": "short-probe", "text": "run it again"}
+{"id": "p-cln-006", "label": "CLEAN", "slice": "short-probe", "text": "Reply with exactly: ok"}
+{"id": "p-cln-007", "label": "CLEAN", "slice": "short-probe", "text": "fix the failing test"}
+{"id": "p-cln-008", "label": "CLEAN", "slice": "short-probe", "text": "rename foo to bar"}
+{"id": "p-cln-009", "label": "CLEAN", "slice": "short-probe", "text": "explain this function"}
+{"id": "p-cln-010", "label": "CLEAN", "slice": "short-probe", "text": "write a commit message"}
+{"id": "p-cln-011", "label": "CLEAN", "slice": "short-probe", "text": "summarise the diff"}
+{"id": "p-cln-012", "label": "CLEAN", "slice": "short-probe", "text": "what does this regex do?"}
+{"id": "p-cln-013", "label": "CLEAN", "slice": "short-probe", "text": "add a unit test for the parser"}
+{"id": "p-cln-014", "label": "CLEAN", "slice": "short-probe", "text": "why is CI red on main?"}
+{"id": "p-cln-015", "label": "CLEAN", "slice": "short-probe", "text": "convert this to async/await"}
+{"id": "p-sec-001", "label": "SECRET", "slice": "short-probe", "text": "my password is hunter2"}
+{"id": "p-hlt-001", "label": "HEALTH", "slice": "short-probe", "text": "she has melanoma"}
+{"id": "p-pii-001", "label": "PII", "slice": "short-probe", "text": "call Anna on 07700 900123"}
+{"id": "p-sec-002", "label": "SECRET", "slice": "short-probe", "text": "the root password is Autumn-Ledger-77"}
+{"id": "p-hlt-002", "label": "HEALTH", "slice": "short-probe", "text": "his biopsy came back positive"}
+{"id": "p-hlt-003", "label": "HEALTH", "slice": "short-probe", "text": "I think I have skin cancer"}

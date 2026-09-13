@@ -125,3 +125,82 @@
 {"id":"rgx-008","label":"SECRET","slice":"regex-visible","text":"-----BEGIN RSA PRIVATE KEY-----\nTUhJUyBJUyBOT1QgQSBSRUFMIEtFWSwgSVQgSVMgQSBURVNUIEZJWFRVUkU=\n-----END RSA PRIVATE KEY-----"}
 {"id":"rgx-009","label":"PII","slice":"regex-visible","text":"the account for ana.duarte@northgate.internal cannot log in"}
 {"id":"rgx-010","label":"HEALTH","slice":"regex-visible","text":"here is the mole photo data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD"}
+{"id": "cln-056", "label": "CLEAN", "slice": "negative-short", "text": "sure"}
+{"id": "cln-057", "label": "CLEAN", "slice": "negative-short", "text": "go ahead"}
+{"id": "cln-058", "label": "CLEAN", "slice": "negative-short", "text": "no"}
+{"id": "cln-059", "label": "CLEAN", "slice": "negative-short", "text": "nope, try again"}
+{"id": "cln-060", "label": "CLEAN", "slice": "negative-short", "text": "perfect, thanks"}
+{"id": "cln-061", "label": "CLEAN", "slice": "negative-short", "text": "cool"}
+{"id": "cln-062", "label": "CLEAN", "slice": "negative-short", "text": "retry"}
+{"id": "cln-063", "label": "CLEAN", "slice": "negative-short", "text": "stop"}
+{"id": "cln-064", "label": "CLEAN", "slice": "negative-short", "text": "undo that"}
+{"id": "cln-065", "label": "CLEAN", "slice": "negative-short", "text": "again please"}
+{"id": "cln-066", "label": "CLEAN", "slice": "negative-short", "text": "looks good"}
+{"id": "cln-067", "label": "CLEAN", "slice": "negative-short", "text": "do it"}
+{"id": "cln-068", "label": "CLEAN", "slice": "negative-short", "text": "next"}
+{"id": "cln-069", "label": "CLEAN", "slice": "negative-short", "text": "keep going"}
+{"id": "cln-070", "label": "CLEAN", "slice": "negative-short", "text": "why?"}
+{"id": "cln-071", "label": "CLEAN", "slice": "negative-short", "text": "hmm"}
+{"id": "cln-072", "label": "CLEAN", "slice": "negative-short", "text": "that's wrong"}
+{"id": "cln-073", "label": "CLEAN", "slice": "negative-short", "text": "try a different approach"}
+{"id": "cln-074", "label": "CLEAN", "slice": "negative-short", "text": "use tabs, not spaces"}
+{"id": "cln-075", "label": "CLEAN", "slice": "negative-short", "text": "make it shorter"}
+{"id": "cln-076", "label": "CLEAN", "slice": "negative-short", "text": "same for the other file"}
+{"id": "cln-077", "label": "CLEAN", "slice": "negative-short", "text": "now the tests"}
+{"id": "cln-078", "label": "CLEAN", "slice": "negative-short", "text": "lgtm"}
+{"id": "cln-079", "label": "CLEAN", "slice": "negative-short", "text": "ship it"}
+{"id": "cln-080", "label": "CLEAN", "slice": "negative-short", "text": "sounds good to me"}
+{"id": "cln-081", "label": "CLEAN", "slice": "negative-short", "text": "can you check?"}
+{"id": "cln-082", "label": "CLEAN", "slice": "negative-short", "text": "what about edge cases?"}
+{"id": "cln-083", "label": "CLEAN", "slice": "negative-short", "text": "less verbose please"}
+{"id": "cln-084", "label": "CLEAN", "slice": "negative-short", "text": "one more time"}
+{"id": "cln-085", "label": "CLEAN", "slice": "negative-short", "text": "show me the diff"}
+{"id": "cln-086", "label": "CLEAN", "slice": "negative-short", "text": "respond in JSON only"}
+{"id": "cln-087", "label": "CLEAN", "slice": "negative-short", "text": "answer in one word"}
+{"id": "cln-088", "label": "CLEAN", "slice": "negative-short", "text": "print hello world"}
+{"id": "cln-089", "label": "CLEAN", "slice": "negative-short", "text": "walk me through this file"}
+{"id": "cln-090", "label": "CLEAN", "slice": "negative-short", "text": "describe what this class does"}
+{"id": "cln-091", "label": "CLEAN", "slice": "negative-short", "text": "give me a summary of the PR"}
+{"id": "cln-092", "label": "CLEAN", "slice": "negative-short", "text": "tl;dr this log"}
+{"id": "cln-093", "label": "CLEAN", "slice": "negative-short", "text": "what changed?"}
+{"id": "cln-094", "label": "CLEAN", "slice": "negative-short", "text": "is this safe to merge?"}
+{"id": "cln-095", "label": "CLEAN", "slice": "negative-short", "text": "squash these commits"}
+{"id": "sec-021", "label": "SECRET", "slice": "short-secret", "text": "my PIN is 4471"}
+{"id": "sec-022", "label": "SECRET", "slice": "short-secret", "text": "the vault code is Maple-Otter-12"}
+{"id": "sec-023", "label": "SECRET", "slice": "short-secret", "text": "pass: RiverStone99"}
+{"id": "sec-024", "label": "SECRET", "slice": "short-secret", "text": "wifi key is Copper-Lantern-8"}
+{"id": "hlt-025", "label": "HEALTH", "slice": "short-health", "text": "she's pregnant again"}
+{"id": "hlt-026", "label": "HEALTH", "slice": "short-health", "text": "my mum's dementia is getting worse"}
+{"id": "hlt-027", "label": "HEALTH", "slice": "short-health", "text": "I've found a lump on my neck"}
+{"id": "hlt-028", "label": "HEALTH", "slice": "short-health", "text": "he's on chemo since March"}
+{"id": "pii-019", "label": "PII", "slice": "short-pii", "text": "text me on 07700 900555"}
+{"id": "pii-020", "label": "PII", "slice": "short-pii", "text": "Jane Holloway lives at 4 Elm Row"}
+{"id": "pii-021", "label": "PII", "slice": "short-pii", "text": "my card ends 9912"}
+{"id": "pii-022", "label": "PII", "slice": "short-pii", "text": "Tomasz's birthday is 3 May 1988"}
+{"id": "sec-025", "label": "SECRET", "slice": "short-secret", "text": "admin pw is Tulip-Anchor-5"}
+{"id": "sec-026", "label": "SECRET", "slice": "short-secret", "text": "token for prod: bluefinch-2291"}
+{"id": "sec-027", "label": "SECRET", "slice": "short-secret", "text": "the safe combo is 38-12-44"}
+{"id": "sec-028", "label": "SECRET", "slice": "short-secret", "text": "door code 7723"}
+{"id": "sec-029", "label": "SECRET", "slice": "short-secret", "text": "my passphrase: velvet harbour moon"}
+{"id": "sec-030", "label": "SECRET", "slice": "short-secret", "text": "VPN key is Quartz-Hollow-61"}
+{"id": "sec-031", "label": "SECRET", "slice": "short-secret", "text": "api secret is oakridge-9981"}
+{"id": "sec-032", "label": "SECRET", "slice": "short-secret", "text": "backup password: Nimbus!2027"}
+{"id": "sec-033", "label": "SECRET", "slice": "short-secret", "text": "my bank PIN is 0918"}
+{"id": "hlt-029", "label": "HEALTH", "slice": "short-health", "text": "he has type 1 diabetes"}
+{"id": "hlt-030", "label": "HEALTH", "slice": "short-health", "text": "my dad had a stroke last week"}
+{"id": "hlt-031", "label": "HEALTH", "slice": "short-health", "text": "she's on antidepressants"}
+{"id": "hlt-032", "label": "HEALTH", "slice": "short-health", "text": "I was diagnosed with lupus"}
+{"id": "hlt-033", "label": "HEALTH", "slice": "short-health", "text": "my son has epilepsy"}
+{"id": "hlt-034", "label": "HEALTH", "slice": "short-health", "text": "the man in room 3 is HIV positive"}
+{"id": "hlt-035", "label": "HEALTH", "slice": "short-health", "text": "she miscarried in June"}
+{"id": "hlt-036", "label": "HEALTH", "slice": "short-health", "text": "I'm starting radiotherapy Monday"}
+{"id": "hlt-037", "label": "HEALTH", "slice": "short-health", "text": "she has Crohn's disease"}
+{"id": "pii-023", "label": "PII", "slice": "short-pii", "text": "Oliver Brandt, 14 Quay Lane"}
+{"id": "pii-024", "label": "PII", "slice": "short-pii", "text": "ring Priya on 07700 900321"}
+{"id": "pii-025", "label": "PII", "slice": "short-pii", "text": "Sam's home is 22 Birch Close"}
+{"id": "pii-026", "label": "PII", "slice": "short-pii", "text": "his date of birth is 9 Feb 1991"}
+{"id": "pii-027", "label": "PII", "slice": "short-pii", "text": "her maiden name was Kowalczyk"}
+{"id": "pii-028", "label": "PII", "slice": "short-pii", "text": "account holder: Mira Solis"}
+{"id": "pii-029", "label": "PII", "slice": "short-pii", "text": "Leo moved to 7 Fenwick Road"}
+{"id": "pii-030", "label": "PII", "slice": "short-pii", "text": "my ex's new number is 07700 900410"}
+{"id": "pii-031", "label": "PII", "slice": "short-pii", "text": "Dana Reyes, flat 5, Bristol"}

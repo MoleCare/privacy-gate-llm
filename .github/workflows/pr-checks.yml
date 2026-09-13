@@ -48,7 +48,7 @@ jobs:
         run: |
           PYTHONPATH=src python - <<'PY'
           from privacy_gate.dataset import load
-          for path, expected in (("data/gold.jsonl", 127), ("data/fresh.jsonl", 20)):
+          for path, expected in (("data/gold.jsonl", 206), ("data/fresh.jsonl", 20), ("data/short-probe.jsonl", 21)):
               rows = load(path)
               assert len(rows) == expected, f"{path}: {len(rows)} rows, expected {expected}"
               print(f"{path}: {len(rows)} rows OK")
