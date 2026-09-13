@@ -21,9 +21,9 @@ Step 2 is about ten lines in any language. Step 1 is the only real dependency.
 ```python
 from privacy_gate.gate import Gate
 
-gate = Gate.load("model/head-v0.json", url="http://127.0.0.1:11434")
+gate = Gate.load("model/head-v1.json", url="http://127.0.0.1:11434")
 d = gate.decide("her biopsy is booked for the 20th")
-# Decision(hold=True, score=7.23, threshold=-0.4545)
+# Decision(hold=True, score=6.33, threshold=0.1209)
 
 gate.decide_many([...])   # one embedding call for the whole batch
 ```
@@ -31,15 +31,15 @@ gate.decide_many([...])   # one embedding call for the whole batch
 ### 2. The HTTP sidecar, for everything else
 
 ```bash
-python3 scripts/serve.py --head model/head-v0.json --port 8231
+python3 scripts/serve.py --head model/head-v1.json --port 8231
 ```
 
 ```bash
 curl -s localhost:8231/check -d '{"text":"her biopsy is booked for the 20th"}'
-{"hold": true, "score": 7.2272, "threshold": -0.4545, "margin": 7.6817}
+{"hold": true, "score": 6.3272, "threshold": 0.1209, "margin": 6.2063}
 
-curl -s localhost:8231/check -d '{"texts":["reformat this YAML","the root password is Autumn-Ledger-77"]}'
-{"results":[{"hold":false,"score":-7.5608,...},{"hold":true,"score":10.5691,...}]}
+curl -s localhost:8231/check -d '{"texts":["reformat this YAML and sort the keys","the root password is Autumn-Ledger-77"]}'
+{"results":[{"hold":false,"score":-9.4142,...},{"hold":true,"score":13.6687,...}]}
 ```
 
 It binds to `127.0.0.1`, has no authentication, and **fails closed**: if the
@@ -48,11 +48,11 @@ non-200 as hold.
 
 ### 3. Port the arithmetic
 
-If you would rather not run Python at all, `model/head-v0.json` is public data:
+If you would rather not run Python at all, `model/head-v1.json` is public data:
 `weights`, `bias`, `mean`, `stdev`, `threshold`. In TypeScript:
 
 ```ts
-import head from "./head-v0.json";
+import head from "./head-v1.json";
 
 export function score(embedding: number[]): number {
   // The head was fitted on L2-normalised vectors. An un-normalised one does not
@@ -114,8 +114,8 @@ Two things worth doing at the same time:
 - **Log the score, not the text.** The score plus the example id is enough to
   tune the threshold later. The text is the thing you are trying not to copy.
 - **Log near-misses.** Anything within about a point of the threshold is a
-  candidate for the gold set, and that is how the eval set stops being 147
-  examples written in one day.
+  candidate for the gold set, and that is how the eval set stops being examples
+  written by one person.
 
 The three `negative-fixture` cases in `docs/JOURNAL.md` are worth fixing in
 `v1.yaml` while you are in there: they are the whole of the composed system's
@@ -278,29 +278,29 @@ if text.strip():
 
 Be careful with the threshold here. A commit hook that fires on ordinary work
 gets `--no-verify`'d within a day, and then it protects nothing. Start at the
-95.8%-catch operating point rather than the 100% one, and move it only if
-something gets through.
+shipped threshold rather than the 100% one, and move it only if something gets
+through.
 
 ---
 
 ## Choosing a threshold
 
-The head ships with the catch ≥ 98% point. `docs/JOURNAL.md` run 6 has the full
-curve; these are the useful corners:
+Head v1 ships with the catch ≥ 99% point. `docs/JOURNAL.md` run 10 has the
+measurements; these are the useful corners:
 
 | threshold | catch | friction | use when |
 |---|---|---|---|
-| −1.385 | 100% | 16.4% | nothing may leak and interruptions are acceptable |
-| −0.455 | 98.6% | 12.7% | the default in `model/head-v0.json` |
-| −0.232 | 97.2% | 9.1% | high-volume paths where friction compounds |
+| −1.455 | 100% | 12.6% | nothing may leak and interruptions are acceptable |
+| +0.121 | 99.1% | 5.3% | the default in `model/head-v1.json` |
+| +0.881 | 90.1% | 2.1% | only where friction costs more than a leak: 11 of 111 leak here |
 
 Override it per caller rather than editing the file:
 
 ```bash
-python3 scripts/serve.py --threshold -1.385
+python3 scripts/serve.py --threshold -1.455
 ```
 
-Those numbers come from 127 examples written by one person. Treat them as a
+Those numbers come from 206 examples written by one person. Treat them as a
 starting point and re-measure on your own traffic — logging scores from day one
 is what makes that possible later.
 

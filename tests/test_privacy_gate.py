@@ -313,10 +313,12 @@ class TestGate(unittest.TestCase):
         self.assertEqual(restored.bias, original.bias)
 
     def test_shipped_head_is_loadable_and_normalised_for(self) -> None:
-        path = Path(__file__).resolve().parent.parent / "model" / "head-v0.json"
-        gate = Gate.load(path)
-        self.assertEqual(len(gate.model.weights), 1024)
-        self.assertEqual(gate.embedding_model, "bge-m3")
+        for name in ("head-v1.json", "head-v0.json"):
+            with self.subTest(head=name):
+                path = Path(__file__).resolve().parent.parent / "model" / name
+                gate = Gate.load(path)
+                self.assertEqual(len(gate.model.weights), 1024)
+                self.assertEqual(gate.embedding_model, "bge-m3")
 
 
 class TestFeatures(unittest.TestCase):

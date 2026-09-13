@@ -11,7 +11,7 @@ What is measured is the whole decision: embed the text, standardise, dot,
 compare. The arithmetic is 1024 multiply-adds and is far below the noise floor;
 in practice this measures the embedding call and the network hop to it.
 
-    PYTHONPATH=src python3 scripts/latency.py --head model/head-v0.json
+    PYTHONPATH=src python3 scripts/latency.py --head model/head-v1.json
 
 Report the host's load alongside the numbers. On a shared box the same call can
 differ by an order of magnitude, and a percentile without that context is not a
@@ -54,7 +54,7 @@ def percentile(values: list[float], q: float) -> float:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--head", default="model/head-v0.json")
+    parser.add_argument("--head", default="model/head-v1.json")
     parser.add_argument("--data", default="data/gold.jsonl")
     parser.add_argument("--url", default="http://127.0.0.1:11434")
     parser.add_argument("--repeats", type=int, default=5, help="passes over each bucket")

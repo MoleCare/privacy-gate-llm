@@ -12,8 +12,9 @@ Two numbers recur:
   A guard that fires on ordinary engineering gets switched off, and then it
   protects nothing.
 
-All runs use `data/gold.jsonl`: 127 hand-written examples, 55 clean and 72
-sensitive. Greedy decoding, `temperature 0`, `seed 0`, thinking off.
+Runs 0–9 use the first 127 rows of `data/gold.jsonl`, 55 clean and 72
+sensitive. Run 10 grows the set to 206, 95 clean and 111 sensitive, by
+appending rows, so the first 127 are unchanged. Greedy decoding, `temperature 0`, `seed 0`, thinking off.
 
 **Every figure here was re-measured after run 9**, which changed one example and
 the ruleset it is scored against. Numbers describe the data and rules as they
@@ -482,6 +483,105 @@ composition allowed releasing.
 
 ---
 
+## Run 10 — short prompts, and head v1 (2026-09-13)
+
+Switched on in llm-harness, head v0 held short harmless prompts. Sent through
+`/route/explain`, 21 short prompts showed it:
+
+| | sensitive caught | harmless held |
+|---|---|---|
+| v0 | 6/6 | **8/15** |
+
+`ok` scored +3.73, `thanks!` +5.11, `Reply with exactly: ok` +4.23. Nothing
+leaked, but a gate that holds `continue` and `yes` gets switched off. The gold
+set's shortest row was 24 characters, so nothing that short had ever been
+scored. A threshold could not fix it: clearing those prompts needs about +5.5,
+and real sensitive sentences in the fresh set score +2.4.
+
+### The probe is held out
+
+Those 21 prompts are `data/short-probe.jsonl`, and no head is ever fitted on
+them. Training on `ok` and then testing on `ok` would make any fix look perfect
+and prove nothing. The training rows added below are different prompts of the
+same shapes, and the script that added them refuses any row that duplicates the
+probe.
+
+### The first attempt taught the set that length predicts the label
+
+The first pass added 40 short benign rows and 12 short sensitive ones. Length on
+its own then scored **AUC 0.7014**, against 0.5813 on the original 127, and 41 of
+the 55 rows under 40 characters were clean. A head fitted on that could learn
+that short means safe, which would release exactly the short sensitive prompts
+this run exists to protect, and inflate its cross-validated score while doing it.
+
+27 more short sensitive rows fixed that:
+
+| | length-only AUC | token-count AUC | under 40 chars, sensitive / clean |
+|---|---|---|---|
+| 127 rows | 0.5813 | 0.6261 | 1 row |
+| 179 rows | 0.7014 | 0.7209 | 14 / 41 |
+| **206 rows** | **0.6256** | **0.6389** | **41 / 41** |
+
+### Baselines on 206 rows
+
+- **Rules:** catch 10/111 (9.0%), friction 1/95 (1.1%). They fire on none of the
+  79 new short rows, sensitive or not.
+- **Hashed unigrams:** AUC **0.7818**, inside CI's 0.60–0.90 band.
+
+### Head v1
+
+Fitted on yserver, five-fold cross-validated.
+
+> ### AUC 0.9927
+
+That is v0's cross-validated AUC to four places, on a different set. It was
+recomputed from the saved held-out scores (0.992698 both ways) and the weights
+differ from v0's, so the coincidence is real rather than a stale file.
+
+| threshold | catch | friction | |
+|---|---|---|---|
+| −1.455 | 100% | 12.6% | nothing leaks |
+| **+0.121** | **99.1%** | **5.3%** | **shipped** |
+| +0.881 | 90.1% | 2.1% | 11 leaks |
+
+The shipped threshold moved from −0.519 to +0.121 because the score distribution
+moved; the rule that picks it did not change. Friction is flat at 5.3% for every
+catch level from 95% to 99%, so there is nothing to gain below the shipped point.
+
+- **The one leak** is `sec-006`, *"our internal API accepts the shared secret
+  letmein-2026 in the X-Auth header"*, at −1.38. v0 missed it too.
+- **The five harmless rows still held:** the photo retention policy question, PAT
+  rotation, `AWS_SECRET_KEY` missing from the vault, the support macro about a
+  bleeding mole, and one new short row, *"give me a summary of the PR"*.
+- **The new slices:** short sensitive 13/13 in each of health, secrets and
+  personal data; short benign 39/40.
+
+### The held-out sets decide it
+
+| | v0 | v1 |
+|---|---|---|
+| short probe, harmless held | 8/15 | **0/15** |
+| short probe, sensitive caught | 6/6 | 6/6 |
+| fresh set, harmless held | 2/9 | **1/9** |
+| fresh set, sensitive caught | 11/11 | 11/11 |
+
+Every probe prompt v0 got wrong moved a long way: `ok` from +3.73 to −9.62,
+`thanks!` from +5.13 to −5.21, `summarise the diff` from +0.58 to −8.37. None got
+worse. On the probe the lowest sensitive score is +5.04, almost five points above
+the threshold, and the highest harmless one is −4.20. On the fresh set the
+thinnest sensitive margin is *"her scan showed nothing but the consultant wants to
+review…"* at +1.13, one point above the threshold.
+
+Run from llm-harness source with the head vendored, before any deploy: `ok`
+−9.62 and `thanks!` −5.23 pass; a clinical sentence at +6.73 and
+`my password is hunter2` at +10.35 are held.
+
+Latency was not re-measured. The encoder and the arithmetic are the same, so run 8
+still holds. `model/head-v0.json` stays in the repository, so runs 6–9 remain
+reproducible.
+
+---
+
 ## What is decided, and what is not
 
 **Decided.** The rules miss 62 of 72 sensitive examples, so the gap is real. The
@@ -489,8 +589,9 @@ gold set is not separable by length or by vocabulary alone. Prompting a small
 chat model does not work: `Qwen3.5-0.8B` scores 0.4609, at chance, measured three
 ways, and worse than hashed unigrams at 0.7429.
 
-**Embeddings plus a logistic head do work.** AUC 0.9927 cross-validated, every
-sensitive example caught at 14.5% friction with zero leaks, and 18 of 20 on
+**Embeddings plus a logistic head do work.** Head v1: AUC 0.9927 cross-validated
+over 206 examples, 110 of 111 sensitive ones caught at 5.3% friction, none of 15
+held-out short harmless prompts held, and 18 of 20 on
 sentences written after training with all 11 sensitive ones caught. The
 architecture question is answered, and the answer is not the one the project
 started out assuming.

@@ -2,9 +2,9 @@
 """The gate itself: text in, hold or send out.
 
     from privacy_gate.gate import Gate
-    gate = Gate.load("model/head-v0.json")
+    gate = Gate.load("model/head-v1.json")
     gate.decide("the woman from Tuesday's clinic has a 7mm lesion on her shoulder")
-    # Decision(hold=True, score=4.61, threshold=-1.294)
+    # Decision(hold=True, score=6.72, threshold=0.1209)
 
 Two things this deliberately does not do.
 

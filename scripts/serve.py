@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 """A loopback HTTP sidecar, so any language can use the gate.
 
-    python3 scripts/serve.py --head model/head-v0.json
+    python3 scripts/serve.py --head model/head-v1.json
 
     curl -s localhost:8231/check -d '{"text":"her biopsy is booked for the 20th"}'
-    {"hold": true, "score": 6.41, "threshold": -0.4545, "margin": 6.86}
+    {"hold": true, "score": 6.3272, "threshold": 0.1209, "margin": 6.2063}
 
 Standard library only, single-threaded, and bound to 127.0.0.1. That is
 deliberate: this exists so a Java, TypeScript or Go service can ask the question
@@ -120,7 +120,7 @@ def make_handler(gate: Gate) -> type[BaseHTTPRequestHandler]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--head", default="model/head-v0.json")
+    parser.add_argument("--head", default="model/head-v1.json")
     parser.add_argument("--port", type=int, default=8231)
     parser.add_argument("--host", default="127.0.0.1", help="do not change this")
     parser.add_argument("--ollama", default="http://127.0.0.1:11434")
