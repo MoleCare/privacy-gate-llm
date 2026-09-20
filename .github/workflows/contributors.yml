@@ -72,7 +72,7 @@ jobs:
       # A gateway on loopback needs no key; off-loopback it returns 401, so
       # LOCAL_MODEL_API_KEY exists for that case.
       - name: Fill README contributors
-        uses: YauhenBichel/readme-contributors@a989ec12436495f0a5fc4bd3947bfe4edcf11939 # reuse captions
+        uses: YauhenBichel/readme-contributors@6102d1fa62437f9f04020fe53627d503ac3dd26e # v1.9.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           format: html
