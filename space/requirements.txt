@@ -1,0 +1,4 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.4
+sentence-transformers>=3.0
+privacy-gate @ git+https://github.com/MoleCare/privacy-gate-llm@main

@@ -1,0 +1,38 @@
+name: Space
+
+# Pushes `space/` to the Hugging Face Space when it changes on main. Needs the repository secret HF_TOKEN
+# (a write token of the Space's owner). Without the secret the job is skipped, not failed.
+
+on:
+  push:
+    branches: [main]
+    paths: ['space/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    if: ${{ vars.HF_SPACE != '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - run: pip install -q huggingface_hub
+      - name: Upload space/ to the Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE: ${{ vars.HF_SPACE }}
+        run: |
+          [ -n "$HF_TOKEN" ] || { echo "no HF_TOKEN secret: skipping"; exit 0; }
+          python - <<'PY'
+          import os
+          from huggingface_hub import HfApi
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          api.upload_folder(folder_path="space", repo_id=os.environ["HF_SPACE"], repo_type="space",
+                            commit_message="space: sync from main", delete_patterns=["*"])
+          print("uploaded")
+          PY
