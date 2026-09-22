@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use privacy-gate in research, please cite it as below."
+title: "privacy-gate: a very small second gate that catches health data, credentials and personal data written as prose"
+authors:
+  - family-names: Bichel
+    given-names: Yauhen
+type: software
+license: Apache-2.0
+repository-code: "https://github.com/MoleCare/privacy-gate-llm"
+url: "https://huggingface.co/YauhenBichel/privacy-gate-llm"
+version: 1.0.0
+date-released: 2026-09-22
+keywords:
+  - privacy
+  - pii-detection
+  - phi-detection
+  - guardrails
+  - llm-router
+  - embeddings
+abstract: >-
+  A logistic head of 1,024 weights over BAAI/bge-m3 embeddings that answers one question about a text,
+  "must this stay on this machine?", and may only ever add a hold behind whatever deterministic rules already
+  run. On a 206-example invented gold set it reaches ROC AUC 0.9927 five-fold, catching 110 of 111 sensitive
+  examples at 5.3 % friction, where a regex ruleset catches 9 %.

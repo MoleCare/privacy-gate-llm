@@ -582,6 +582,65 @@ reproducible.
 
 ---
 
+## Run 11 — the package, and whether three encoders agree (2026-09-22)
+
+Not a model run. The question was whether the gate could be *installed* by
+someone who is not me, and whether the head, fitted on Ollama's `/api/embed`
+output, gives the same verdicts when the embedding comes from somewhere else.
+
+### What changed
+
+`pip install privacy-gate`: the package, a `privacy-gate` command (`check`,
+`serve`, `info`) and the head shipped inside the wheel, so `Gate.load()` needs
+no path. Three backends behind the one head: Ollama (as before), any
+OpenAI-compatible `/v1/embeddings`, and sentence-transformers in process
+(`pip install 'privacy-gate[local]'`). The core stays standard library only; CI
+now installs the wheel in an empty environment and fails if anything came with
+it, or if the bundled head's SHA-256 differs from `model/head-v1.json`
+(`47f18031…`). The sidecar moved into the package; its `/health` names the
+backend and the hash. Exit codes for CI: 3 on a hold with `--fail-on-hold`, 1
+when the gate could not score, which is a hold.
+
+The Ollama backend takes `options`, and `num_gpu: 0` keeps the encoder on the
+CPU. On a box with one GPU slot, an embedding request that loads `bge-m3` on the
+GPU evicts whatever chat model somebody is using; this is the same rule the
+gateway applies, and the reason the run below could happen on a busy machine.
+
+### The three encoders, on the gold set
+
+`scripts/backends_agree.py`, on the shared box, 206 rows, batches of 16.
+Reference: Ollama's `bge-m3` (a GGUF), CPU. Against: the gateway's
+`/v1/embeddings` (its own embedding server) and sentence-transformers with
+`BAAI/bge-m3` from Hugging Face, CPU. Raw output:
+`runs/backends-agree-gold-2026-09-22.json`.
+
+| Backend | Same verdict as Ollama | Score delta, median | Score delta, largest | Cosine, smallest | Per text |
+|---|---|---|---|---|---|
+| Ollama `/api/embed`, CPU (reference) | — | — | — | — | 23.5 ms |
+| gateway `/v1/embeddings` | **206 of 206** | 0.007 | 0.048 | 0.99998 | 18.1 ms |
+| sentence-transformers, CPU | **206 of 206** | 0.007 | 0.048 | 0.99998 | 61.3 ms |
+
+Two things worth knowing. First, the gateway and sentence-transformers agree
+with each other to five decimals (largest score difference 0.00002): the
+gateway's embedding server serves the Hugging Face weights, so those two are
+one encoder, and the comparison that matters is GGUF against the original
+weights. Second, the largest score delta between them, 0.048, sits against a
+smallest margin of 4.3 on this set (the head was fitted on all 206 rows, so
+in-sample margins are wide; the cross-validated numbers of run 10 are the
+honest ones). A delta of 0.05 cannot flip a verdict here. It could flip one on
+a text that sits within 0.05 of the threshold, which is exactly the text the
+`margin` field exists to flag.
+
+So the answer to condition 3 below, "a decision on where it runs", has become:
+anywhere with any of the three, and the verdicts will match. The remaining
+conditions stand.
+
+### Not done
+
+The container image is written (`Dockerfile`, the encoder baked in) but was
+not built here; the release workflow builds it. PyPI trusted publishing needs a
+one-time setup on PyPI by the owner before the first tag.
+
 ## What is decided, and what is not
 
 **Decided.** The rules miss 62 of 72 sensitive examples, so the gap is real. The
