@@ -1,12 +1,13 @@
 name: Space
 
-# Pushes `space/` to the Hugging Face Space when it changes on main. Needs the repository secret HF_TOKEN
+# Pushes `space-static/` (the browser-side demo) to the Hugging Face Space when it changes on main. `space/` is the
+# Gradio variant for an account with CPU quota; switch the folder below to use it. Needs the repository secret HF_TOKEN
 # (a write token of the Space's owner). Without the secret the job is skipped, not failed.
 
 on:
   push:
     branches: [main]
-    paths: ['space/**']
+    paths: ['space-static/**']
   workflow_dispatch:
 
 permissions:
@@ -22,7 +23,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -q huggingface_hub
-      - name: Upload space/ to the Space
+      - name: Upload space-static/ to the Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_SPACE: ${{ vars.HF_SPACE }}
@@ -32,7 +33,7 @@ jobs:
           import os
           from huggingface_hub import HfApi
           api = HfApi(token=os.environ["HF_TOKEN"])
-          api.upload_folder(folder_path="space", repo_id=os.environ["HF_SPACE"], repo_type="space",
+          api.upload_folder(folder_path="space-static", repo_id=os.environ["HF_SPACE"], repo_type="space",
                             commit_message="space: sync from main", delete_patterns=["*"])
           print("uploaded")
           PY
