@@ -5,6 +5,8 @@
 [![Dependencies](https://img.shields.io/badge/dependencies-none-lightgrey.svg)](#running-it)
 [![Model on HF](https://img.shields.io/badge/%F0%9F%A4%97-model-yellow.svg)](https://huggingface.co/YauhenBichel/privacy-gate-llm)
 [![Demo](https://img.shields.io/badge/%F0%9F%A4%97-demo-yellow.svg)](https://huggingface.co/spaces/YauhenBichel/privacy-gate-llm-demo)
+[![Dataset on HF](https://img.shields.io/badge/%F0%9F%A4%97-dataset-yellow.svg)](https://huggingface.co/datasets/YauhenBichel/privacy-gate-gold)
+[![PyPI](https://img.shields.io/badge/pip-privacy--gate-blue.svg)](https://pypi.org/project/privacy-gate/)
 [![Contributors](https://img.shields.io/github/contributors/MoleCare/privacy-gate-llm)](https://github.com/MoleCare/privacy-gate-llm#contributors)
 
 A very small model that answers one question about a piece of text:
@@ -110,6 +112,11 @@ gate = Gate.load(embedder=make_embedder("local"))
 what was measured. A container with the in-process encoder: `docker run --rm -p 127.0.0.1:8231:8231
 ghcr.io/molecare/privacy-gate` (built by the release workflow from `Dockerfile`).
 
+Inside tools you already run: a **LiteLLM** guardrail that sends a held request to a local model instead of
+the cloud one, an **Open WebUI** filter, and a **GitHub Action** (`uses: MoleCare/privacy-gate-llm@v1`) that
+fails a pull request whose added lines read like health data, credentials or personal data written as prose.
+See [`integrations/`](integrations/).
+
 **It is not ready to ship.** 247 examples written by one person are
 enough to choose an architecture, not enough to set a threshold that decides what
 leaves a machine holding real patient data. See the end of `docs/JOURNAL.md` for
@@ -186,6 +193,9 @@ and then it protects nothing.
 | `model/head-v0.json` | The previous head, kept so runs 6–9 stay reproducible. |
 | `src/privacy_gate/` | Loading, prompting, scoring, serving. Standard library only. |
 | `scripts/serve.py` | A loopback HTTP sidecar, so any language can call it. |
+| `integrations/` | The gate inside LiteLLM (a guardrail that routes or blocks), Open WebUI (a filter) and any language (the sidecar). |
+| `action.yml`, `action/` | The GitHub Action: fails a pull request whose added lines read like health data, credentials or personal data in prose. |
+| `scripts/public_sets.py`, `runs/public-*` | The head on data other people made, beside Presidio, GLiNER-PII and the rules (run 12). |
 
 ## Running it from a checkout
 
@@ -227,7 +237,9 @@ credential, no real patient. Phone numbers come from Ofcom's drama range
 private key fixture is base64 for a sentence saying it is not a key.
 
 That is a deliberate property, not a convenience: it is what allows this
-repository to be public at all. `SECURITY.md` explains why each fixture is safe,
+repository to be public at all. The same files are on the Hub as
+[`YauhenBichel/privacy-gate-gold`](https://huggingface.co/datasets/YauhenBichel/privacy-gate-gold), with the
+taxonomy and the rules baseline beside them. `SECURITY.md` explains why each fixture is safe,
 and `CONTRIBUTING.md` explains what to do if you add one.
 
 ## Status

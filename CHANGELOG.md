@@ -18,6 +18,12 @@ unchanged: `bge-m3` plus 1,024 weights and a bias, AUC 0.9927 five-fold on the 2
 - A container image with the in-process encoder, and a release workflow (PyPI by trusted publishing, the
   GitHub release, ghcr.io).
 - Standard library only stays true for the core; the optional extra is the only dependency anywhere.
+- The demo Space scores text (Gradio, the encoder on the Space's CPU); the gold-set explorer stays as a tab.
+- Run 12: the head on three public sets beside Presidio, GLiNER-PII and the rules (`scripts/public_sets.py`).
+  The README says the 99 % is an in-domain number and shows the table.
+- Integrations: a LiteLLM guardrail (route to a local model, or block), an Open WebUI filter, and the GitHub
+  Action `MoleCare/privacy-gate-llm@v1` that annotates and fails a pull request on held lines.
+- The gold set on the Hub: `YauhenBichel/privacy-gate-gold`, with the taxonomy and the rules baseline.
 
 ## Before 1.0.0
 
