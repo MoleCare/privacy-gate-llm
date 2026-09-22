@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: Apache-2.0
+name: privacy-gate
+description: Fail a pull request whose added lines look like health data, credentials or personal data written as plain English. A 1,024-weight head on bge-m3; the encoder runs on the runner.
+author: MoleCare
+branding:
+  icon: shield
+  color: yellow
+
+inputs:
+  backend:
+    description: "Where the embedding comes from: local (sentence-transformers on the runner), openai (an OpenAI-compatible /v1/embeddings), ollama"
+    default: local
+  url:
+    description: "The embedding endpoint for the openai and ollama backends"
+    default: ""
+  base:
+    description: "The commit to diff against (default: the pull request's base, or the previous commit on a push)"
+    default: ""
+  paths:
+    description: "Only these files, as a space-separated list of glob patterns (default: every text file)"
+    default: ""
+  min-length:
+    description: "Added lines shorter than this many characters are not scored"
+    default: "30"
+  fail-on-hold:
+    description: "Fail the job when any line must stay (false: annotate only)"
+    default: "true"
+  threshold:
+    description: "Override the head's threshold (blank: the shipped one)"
+    default: ""
+
+outputs:
+  holds:
+    description: "How many added lines the gate held"
+    value: ${{ steps.scan.outputs.holds }}
+  scanned:
+    description: "How many added lines were scored"
+    value: ${{ steps.scan.outputs.scanned }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      with:
+        python-version: '3.12'
+    - name: Cache the encoder
+      if: inputs.backend == 'local'
+      uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+      with:
+        path: ~/.cache/huggingface
+        key: privacy-gate-bge-m3-${{ runner.os }}
+    - name: Install privacy-gate
+      shell: bash
+      run: |
+        if [ "${{ inputs.backend }}" = local ]; then
+          pip install -q --extra-index-url https://download.pytorch.org/whl/cpu "privacy-gate[local] @ git+https://github.com/MoleCare/privacy-gate-llm@${{ github.action_ref || 'main' }}"
+        else
+          pip install -q "privacy-gate @ git+https://github.com/MoleCare/privacy-gate-llm@${{ github.action_ref || 'main' }}"
+        fi
+    - name: Scan the added lines
+      id: scan
+      shell: bash
+      env:
+        PG_BACKEND: ${{ inputs.backend }}
+        PG_URL: ${{ inputs.url }}
+        PG_BASE: ${{ inputs.base || github.event.pull_request.base.sha || github.event.before }}
+        PG_PATHS: ${{ inputs.paths }}
+        PG_MIN_LENGTH: ${{ inputs['min-length'] }}
+        PG_FAIL_ON_HOLD: ${{ inputs['fail-on-hold'] }}
+        PG_THRESHOLD: ${{ inputs.threshold }}
+      run: python "${{ github.action_path }}/action/scan.py"

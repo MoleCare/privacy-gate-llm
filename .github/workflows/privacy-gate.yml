@@ -1,0 +1,23 @@
+name: privacy-gate on our own changes
+
+# The Action, used on this repository: every added line of a pull request goes through the gate. Here it
+# annotates and never fails, because adding a sensitive fixture to the gold set is the normal case in this
+# repository, and each hold is then a line to look at, not a broken build.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: ./
+        with:
+          backend: local
+          fail-on-hold: "false"
