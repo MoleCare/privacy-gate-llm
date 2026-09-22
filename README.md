@@ -115,6 +115,34 @@ enough to choose an architecture, not enough to set a threshold that decides wha
 leaves a machine holding real patient data. See the end of `docs/JOURNAL.md` for
 what would have to be true first.
 
+## On data other people made
+
+The 99 % above is an in-domain number. Run 12 in `docs/JOURNAL.md` scores the
+shipped head, unchanged, on three public sets beside the baselines everyone
+knows (`scripts/public_sets.py`; only ids and scores are committed, the texts
+stay with their owners):
+
+| Set | System | Catch | Friction | AUC |
+|---|---|---|---|---|
+| OpenShift router corpus, EN, 332 prompts | **head** | **0.70** | 0.14 | 0.87 |
+| | Presidio (identifying entities) | 0.26 | 0.04 | |
+| | GLiNER-PII small | 0.38 | 0.15 | |
+| | regex rules | 0.02 | 0.00 | |
+| | Presidio + head | 0.80 | 0.16 | |
+| OpenShift router corpus, IT, 314 prompts | **head** | **0.83** | 0.23 | 0.87 |
+| piimb PII benchmark, 2,000 sentences | **head** | 0.93 | **0.45** | 0.87 |
+| | Presidio (identifying entities) | 0.59 | 0.01 | |
+| | GLiNER-PII small | 0.83 | 0.07 | |
+
+What it shows, in three lines. On the 60 prompts that corpus's author wrote
+with **no marker to match**, the head catches 0.93 where Presidio catches
+0.00: the prose gap is real and this is the only system here that sees it.
+The entity tools catch the bare names the head misses, so the two compose.
+And the shipped threshold is a gold-set threshold: on formal text from
+personal documents (piimb's clean half) the head holds 45 %, and at 5 %
+friction its catch on these sets is 0.37 to 0.47. Those are the hard
+negatives the gold set lacks; see `CONTRIBUTING.md`.
+
 ## How it composes
 
 The model may only ever **add** a hold, never clear one.
