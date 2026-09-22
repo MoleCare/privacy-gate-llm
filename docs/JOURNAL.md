@@ -641,6 +641,97 @@ The container image is written (`Dockerfile`, the encoder baked in) but was
 not built here; the release workflow builds it. PyPI trusted publishing needs a
 one-time setup on PyPI by the owner before the first tag.
 
+## Run 12 — the head on data other people made (2026-09-22)
+
+Condition 1 below asks for an evaluation set not written by me. Three public
+ones exist that ask a question close enough to ours, and none needs a GPU.
+`scripts/public_sets.py` converts each into the gold-set row shape, scores the
+head and the baselines everyone knows, and reports per slice. Only ids, labels,
+slices, verdicts and scores are committed (`runs/public-*-2026-09-22.json`);
+the texts stay with their owners and their licences.
+
+| Set | What it is | Rows | Label map |
+|---|---|---|---|
+| OpenShift router corpus, English | The "privacy-plus" evaluation set of an OpenShift AI router (amedeos.github.io, July 2026): synthetic prompts, each `expect: local` or `sota`, in 15 categories including 60 `implicit` cases with no marker to match | 332: 191 local, 141 sota | local → HEALTH, SECRET or PII by category; sota → CLEAN |
+| The same corpus, Italian | A strict 1:1 translation by its author, same ids | 314: 191 local, 123 sota | as above |
+| piimb/pii-masking-benchmark (CC-BY-NC-4.0) | English sentences from personal documents with span labels; a balanced sample, seed 1 | 2,000: 1,000 with an identifying span, 1,000 with no span | span → PII; no span → CLEAN; sentences whose only spans are dates, titles or company names left out |
+
+SPeDaC, the closest academic benchmark, is restricted: its files need a signed
+agreement with the authors (Zenodo 8091725). Not done; the owner's call.
+
+Systems: the head at its shipped threshold (0.1209), through the gateway's
+embedding server on the box (the Hugging Face weights; run 11 showed they agree
+with Ollama's); Presidio with its default recognisers, counted two ways (any
+entity; an identifying entity only); `knowledgator/gliner-pii-small-v1.0` with
+thirteen PII labels; the regex ruleset through `rules_oracle.py`; and the two
+compositions the design intends.
+
+### Results
+
+| Set | System | Catch | Friction | AUC |
+|---|---|---|---|---|
+| OpenShift EN | **head** | **0.702** | 0.135 | 0.867 |
+| | Presidio, identifying | 0.257 | 0.043 | |
+| | GLiNER-PII small | 0.377 | 0.149 | |
+| | regex rules | 0.016 | 0.000 | |
+| | rules + head | 0.707 | 0.135 | |
+| | Presidio identifying + head | 0.801 | 0.156 | |
+| OpenShift IT | **head** | **0.832** | 0.228 | 0.870 |
+| | GLiNER-PII small | 0.571 | 0.350 | |
+| | regex rules | 0.016 | 0.000 | |
+| piimb | **head** | **0.929** | **0.454** | 0.866 |
+| | Presidio, identifying | 0.594 | 0.006 | |
+| | GLiNER-PII small | 0.830 | 0.066 | |
+| | regex rules | 0.265 | 0.000 | |
+| | Presidio identifying + head | 0.976 | 0.456 | |
+
+The head's catch when the threshold is moved to a fixed friction, on each set
+alone: at 5 % friction 0.398 (OpenShift EN), 0.366 (IT), 0.468 (piimb); at 10 %:
+0.623, 0.670, 0.596. Per-slice tables are in the `.report.json` files and in
+the script's output.
+
+### What it says
+
+1. **The prose gap is real, and the head is the only system here that sees
+   it.** On the 60 English `implicit` cases ("I've made an important personal
+   decision that I want to keep private") the head catches 0.933; Presidio
+   0.000, GLiNER 0.083, the rules 0.000. On `secret` the head catches 0.929
+   where Presidio finds 0.071. This is the claim the project makes, on a set
+   its author designed for exactly that gap, before this project existed.
+2. **The entity tools see what the head misses.** A bare name ("Write a
+   thank-you letter for Mario Rossi"): Presidio 1.000, the head 0.500. The two
+   are complementary, and the composition Presidio-identifying + head reaches
+   0.801 catch on the English set at 0.156 friction, against 0.702 for either
+   alone at best.
+3. **The threshold from the gold set does not transfer.** Friction on the
+   OpenShift set is 0.135, on piimb 0.454: the head holds formal text from
+   personal documents ("Please review the attached policy and send any
+   questions by Friday") that the gold set never showed it. At a friction of
+   5 % the head's catch on these sets is 0.37 to 0.47, nowhere near the 99 %
+   on gold. The gold set's number is an in-domain number.
+4. **Some disagreement is taxonomy, not error.** The corpus's author routes
+   `finance` ("check the balance of the corporate bank account") and `legal`
+   local; under our taxonomy those are CLEAN, and the head says so (catch
+   0.375 and 0.200). `pii_weak` and `location` are sota there and the head
+   holds them (friction 0.75, 0.29). The per-slice table separates the two
+   kinds of miss; the headline numbers do not.
+5. **Italian works without any Italian training**: 0.832 catch, 0.228
+   friction, the same AUC as English. `bge-m3` is multilingual and the head
+   does not care. GLiNER-PII small, English-trained, drops to 0.571 / 0.350.
+
+### What changes because of it
+
+The README's numbers gain a second table, this one, and the claim becomes:
+the head catches what the rules and the entity tools cannot see, on someone
+else's data; it also holds more than it should on text unlike its training
+set, and the shipped threshold is a gold-set threshold. The hard negatives the
+contributing guide asks for now have a description: formal personal
+correspondence, notices, policies, letters. piimb's 1,000 clean sentences
+are 454 of them, and a head fitted with them in the negative class is the
+next run. Condition 1 below is met in part: an independent set exists and was
+scored; the threshold has not been reset on it, on purpose, because that is a
+policy decision with a friction cost the owner has to accept.
+
 ## What is decided, and what is not
 
 **Decided.** The rules miss 62 of 72 sensitive examples, so the gap is real. The
