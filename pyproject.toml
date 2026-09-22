@@ -1,0 +1,60 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "privacy-gate"
+version = "1.0.0"
+description = "A very small model that catches health data, credentials and personal data written as ordinary English, which pattern rules cannot see. bge-m3 plus 1024 weights. A second gate that may only ever add a hold."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+requires-python = ">=3.11"
+authors = [{ name = "Yauhen Bichel" }]
+keywords = [
+  "privacy", "pii", "phi", "pii-detection", "phi-detection", "guardrails", "llm-safety", "llm-router",
+  "prompt-guard", "data-loss-prevention", "gdpr", "healthcare", "embeddings", "bge-m3", "ollama",
+  "sentence-transformers", "text-classification",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Security",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Text Processing :: Linguistic",
+  "Operating System :: OS Independent",
+]
+# The core is standard library only, on purpose: it runs anywhere Python does. The embedding comes from
+# an Ollama or OpenAI-compatible endpoint you already run. `local` adds an in-process encoder.
+dependencies = []
+
+[project.optional-dependencies]
+local = ["sentence-transformers>=3.0"]
+
+[project.scripts]
+privacy-gate = "privacy_gate.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/MoleCare/privacy-gate-llm"
+Repository = "https://github.com/MoleCare/privacy-gate-llm"
+Issues = "https://github.com/MoleCare/privacy-gate-llm/issues"
+Model = "https://huggingface.co/YauhenBichel/privacy-gate-llm"
+Demo = "https://huggingface.co/spaces/YauhenBichel/privacy-gate-llm-demo"
+Changelog = "https://github.com/MoleCare/privacy-gate-llm/blob/main/CHANGELOG.md"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/privacy_gate"]
+
+# The head ships inside the wheel, so `Gate.load()` works with no path and no checkout. The canonical file
+# stays at model/head-v1.json, where the journal, the data job and the model card point.
+[tool.hatch.build.targets.wheel.force-include]
+"model/head-v1.json" = "privacy_gate/models/head-v1.json"
+
+[tool.hatch.build.targets.sdist]
+include = ["src/privacy_gate", "model/head-v1.json", "README.md", "LICENSE", "NOTICE", "CHANGELOG.md", "pyproject.toml"]

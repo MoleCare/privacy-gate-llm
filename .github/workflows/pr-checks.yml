@@ -110,3 +110,23 @@ jobs:
               "changed character. Either way the journal needs revisiting."
           )
           PY
+
+  package:
+    name: the wheel installs and carries the head
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      # The only pip here builds and installs the package itself. The core has no dependencies, and this job
+      # is where that is checked: the installed wheel must import, find its head and answer `info` with
+      # nothing else installed.
+      - name: Build
+        run: pip install -q build && python -m build
+      - name: Install the wheel in an empty environment and run it
+        run: |
+          python -m venv /tmp/clean && /tmp/clean/bin/pip install -q dist/*.whl
+          /tmp/clean/bin/pip list --format=freeze | grep -v -i -E '^(pip|privacy.gate)=' && { echo "::error::the wheel pulled in a dependency"; exit 1; } || true
+          /tmp/clean/bin/privacy-gate info
+          /tmp/clean/bin/privacy-gate info | python -c "import json,sys,hashlib; i=json.load(sys.stdin); h=hashlib.sha256(open('model/head-v1.json','rb').read()).hexdigest(); assert i['head_sha256']==h, (i['head_sha256'], h); print('bundled head matches model/head-v1.json', h[:16])"

@@ -1,0 +1,10 @@
+.git
+.github
+.venv
+runs
+docs
+data
+tests
+scripts
+model/head-v0.json
+**/__pycache__

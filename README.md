@@ -71,13 +71,44 @@ The whole gate is `bge-m3` plus **1024 weights and a bias** — `model/head-v1.j
 It costs **34–43 ms** per call at p50 and under 50 ms at p95, measured on a
 loaded shared box, and 18 ms per text when batched.
 
+## Install
+
+```bash
+pip install privacy-gate            # standard library only; the embedding comes from an endpoint you run
+ollama pull bge-m3                  # the default backend: Ollama on 127.0.0.1:11434
+
+privacy-gate check "the woman from Tuesday's clinic has a 7mm lesion on her shoulder"
+# hold  score=6.7200 threshold=0.1209 margin=6.5991
+```
+
+Three places the embedding can come from, one head:
+
+| Backend | Command | Needs |
+|---|---|---|
+| `ollama` (default) | `privacy-gate check --backend ollama --url http://127.0.0.1:11434 "..."` | Ollama with `bge-m3` |
+| `openai` | `privacy-gate check --backend openai --url http://127.0.0.1:11500 "..."` | any OpenAI-compatible `/v1/embeddings`: a gateway, vLLM, LM Studio, llama.cpp; a key via `PRIVACY_GATE_API_KEY` if it wants one |
+| `local` | `pip install 'privacy-gate[local]'` then `privacy-gate check --backend local "..."` | sentence-transformers; downloads `BAAI/bge-m3` (2.2 GB) once; CPU is enough |
+
+The head was fitted on Ollama's output. Whether the other two backends give the same verdicts is measured, not
+assumed: `scripts/backends_agree.py`, result in `docs/JOURNAL.md`. Every backend must return unit vectors; the
+gate refuses anything else rather than score it.
+
 ```python
 from privacy_gate.gate import Gate
 
-gate = Gate.load("model/head-v1.json")
+gate = Gate.load()                      # the head shipped with this version, Ollama on 127.0.0.1:11434
 gate.decide("the woman from Tuesday's clinic has a 7mm lesion on her shoulder")
 # Decision(hold=True, score=6.72, threshold=0.1209)
+
+from privacy_gate.backends import make_embedder
+gate = Gate.load(embedder=make_embedder("openai", url="http://127.0.0.1:11500"))
+gate = Gate.load(embedder=make_embedder("local"))
 ```
+
+`privacy-gate serve` is the loopback HTTP sidecar for other languages (below); `privacy-gate check
+--fail-on-hold` exits 3 on a hold, for CI; `privacy-gate info` prints the head's SHA-256, so what you run is
+what was measured. A container with the in-process encoder: `docker run --rm -p 127.0.0.1:8231:8231
+ghcr.io/molecare/privacy-gate` (built by the release workflow from `Dockerfile`).
 
 **It is not ready to ship.** 247 examples written by one person are
 enough to choose an architecture, not enough to set a threshold that decides what
@@ -128,11 +159,11 @@ and then it protects nothing.
 | `src/privacy_gate/` | Loading, prompting, scoring, serving. Standard library only. |
 | `scripts/serve.py` | A loopback HTTP sidecar, so any language can call it. |
 
-## Running it
+## Running it from a checkout
 
 Everything here is standard library only. The one external dependency is an
 [Ollama](https://ollama.com) endpoint serving `bge-m3`, which can be your own
-machine:
+machine (or, for the gate alone, any of the three backends above):
 
 ```bash
 ollama pull bge-m3

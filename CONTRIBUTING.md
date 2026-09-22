@@ -84,8 +84,11 @@ improvement.
 
 ## Style
 
-- Standard library only. A dependency here would need to justify itself against
-  "it runs anywhere Python does".
+- Standard library only in the core. A dependency there would need to justify
+  itself against "it runs anywhere Python does". The one exception is the
+  optional `local` extra (`sentence-transformers`), which is never imported
+  unless that backend is asked for; CI installs the wheel in an empty
+  environment and fails if anything else came with it.
 - Comments explain *why*, not *what*. Several in this codebase exist because of a
   specific bug — keep that habit; it is why the journal is short.
 - British spelling, to match the rest of MoleCare.
