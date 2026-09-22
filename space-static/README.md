@@ -7,7 +7,7 @@ sdk: static
 app_file: index.html
 pinned: false
 license: apache-2.0
-short_description: Catches health data, secrets and PII in prose, in your browser
+short_description: Health data, secrets and PII in prose, in your browser
 models:
 - YauhenBichel/privacy-gate-llm
 - Xenova/bge-m3
