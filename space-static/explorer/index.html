@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>privacy-gate-llm</title>
+<style>
+  :root{
+    --bg:#fbfaf8; --panel:#fff; --ink:#1b1a18; --muted:#6b6862; --line:#e6e2dc;
+    --hold:#b45309; --holdbg:rgba(217,119,6,.10); --holdline:#e6c08a;
+    --send:#047857; --sendbg:rgba(5,150,105,.09); --sendline:#9ed4be;
+    --accent:#7c3aed;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#16151a; --panel:#1e1d24; --ink:#eceaf3; --muted:#9b96a8; --line:#332f3d;
+      --hold:#fbbf24; --holdbg:rgba(251,191,36,.10); --holdline:#6b5320;
+      --send:#34d399; --sendbg:rgba(52,211,153,.09); --sendline:#1f5c48;
+      --accent:#a78bfa;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:30px;line-height:1.2;margin:0 0 6px;letter-spacing:-.02em}
+  h2{font-size:19px;margin:38px 0 12px;letter-spacing:-.01em}
+  .lede{color:var(--muted);font-size:17px;margin:0 0 26px;max-width:64ch}
+  a{color:var(--accent)}
+  code{font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;
+    background:color-mix(in srgb,var(--ink) 7%,transparent);padding:1px 5px;border-radius:4px}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .stat .k{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+  .stat .v{font-size:26px;font-weight:650;letter-spacing:-.02em;margin-top:2px;
+    font-variant-numeric:tabular-nums}
+
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .thresholdrow{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .thresholdrow .val{font:600 20px/1 ui-monospace,monospace;min-width:5ch;
+    font-variant-numeric:tabular-nums}
+
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+    font-weight:600;position:sticky;top:0;background:var(--bg)}
+  td.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+
+  .pill{display:inline-block;font-size:11px;font-weight:650;letter-spacing:.04em;
+    padding:2px 8px;border-radius:20px;border:1px solid}
+  .pill.hold{color:var(--hold);background:var(--holdbg);border-color:var(--holdline)}
+  .pill.send{color:var(--send);background:var(--sendbg);border-color:var(--sendline)}
+  tr.gap td{background:var(--holdbg)}
+  tr.wrong td:first-child{box-shadow:inset 3px 0 0 #dc2626}
+
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+  .filters button{font:inherit;font-size:13px;padding:6px 12px;border-radius:20px;
+    border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+  .filters button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  .note{color:var(--muted);font-size:13.5px;margin-top:10px}
+  .warn{border-left:3px solid var(--hold);padding:12px 16px;background:var(--holdbg);
+    border-radius:0 8px 8px 0;margin:22px 0}
+  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+  @media (max-width:640px){.cmp{grid-template-columns:1fr}}
+  .foot{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);
+    color:var(--muted);font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Must this stay on this machine?</h1>
+  <p class="lede">
+    <strong>1024 weights and a bias</strong>, on top of
+    <a href="https://huggingface.co/BAAI/bge-m3">BAAI/bge-m3</a>. It catches health
+    information, credentials and personal data written as <em>ordinary English</em> —
+    the kind a regex ruleset cannot see.
+  </p>
+
+  <div class="cmp">
+    <div class="panel">
+      <div style="font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)">A regex ruleset sees</div>
+      <p style="margin:8px 0 0"><code>Patient ID: 40219</code>, <code>sk-ant-…</code>,
+      <code>AKIA…</code>, a base64 image. Anything shaped like a marker.</p>
+      <p class="note">Catches <strong>10 of 111</strong> sensitive examples. 9.0%.</p>
+    </div>
+    <div class="panel">
+      <div style="font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)">It cannot see</div>
+      <p style="margin:8px 0 0"><em>“The woman from Tuesday’s clinic, 34, has a 7mm
+      asymmetric lesion on her left shoulder and a biopsy booked for the 20th.”</em></p>
+      <p class="note">No marker. No pattern matches. <strong>101 of 111</strong> look like this.</p>
+    </div>
+  </div>
+
+  <h2>Move the threshold</h2>
+  <p class="note" style="margin-top:0">
+    The gate is a score, not a verdict, so the trade-off is a dial. Every number below
+    is recomputed live over the 206-example gold set. Scores are
+    <strong>five-fold cross-validated</strong> — each one comes from a head that never
+    saw that example.
+  </p>
+
+  <div class="panel">
+    <div class="thresholdrow">
+      <span class="val" id="tval">+0.12</span>
+      <input type="range" id="thr" min="-14" max="14" step="0.05" value="0.1209" style="flex:1;min-width:220px">
+      <button id="reset" style="font:inherit;font-size:13px;padding:6px 12px;border-radius:8px;
+        border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer">
+        shipped default
+      </button>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">Catch rate</div><div class="v" id="catch">—</div></div>
+      <div class="stat"><div class="k">Friction rate</div><div class="v" id="fric">—</div></div>
+      <div class="stat"><div class="k">Leaks</div><div class="v" id="leaks">—</div></div>
+      <div class="stat"><div class="k">Rules would catch</div><div class="v">9.0%</div></div>
+    </div>
+    <div class="note" id="summary"></div>
+  </div>
+
+  <h2>Every example</h2>
+  <div class="filters" id="filters"></div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr>
+        <th>Text</th><th>Should be</th><th>Rules</th><th>Gate</th><th class="num">Score</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <p class="note">
+    Shaded rows are the ones that matter: <strong>the rules miss them and the gate
+    catches them</strong>. A red edge marks a row the gate gets wrong at the current
+    threshold. The last 41 rows are held out of training: 20 <em>fresh</em> sentences written after the head was trained, and 21 <em>short probe</em> prompts, the ones that showed v0 holding “ok” and “thanks!”.
+  </p>
+
+  <div class="warn">
+    <strong>A <code>send</code> verdict is not an assurance that text is safe.</strong>
+    This is a second gate that may only ever <em>add</em> a hold, behind whatever
+    deterministic checks you already run. It is a net, not a proof — and it is not
+    production-validated: the evidence is 206 training examples and 41 held-out ones, all written by one person.
+  </div>
+
+  <h2>What did not work, measured</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Approach</th><th class="num">AUC</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Qwen3.5-0.8B, prompted for a label</td><td class="num">0.4609</td>
+            <td>At chance. Answered <code>HEALTH</code> for 106 of 127 and never once
+            <code>SECRET</code> or <code>PII</code>. Its 95.8% “catch rate” was a stopped clock.</td></tr>
+        <tr><td>Hashed word unigrams, no model</td><td class="num">0.7818</td>
+            <td>Real signal, useless as a gate: 83.2% friction. Cannot tell
+            <em>talking about</em> a password from <em>containing</em> one.</td></tr>
+        <tr><td><strong>bge-m3 + logistic head</strong></td><td class="num"><strong>0.9927</strong></td>
+            <td>Head v1: 110 of 111 caught at 5.3% friction, and none of 15 held-out short harmless prompts held (v0 held 8).</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Use it</h2>
+  <div class="panel">
+<pre style="margin:0;overflow-x:auto"><code>from sentence_transformers import SentenceTransformer
+from huggingface_hub import hf_hub_download
+import json, numpy as np
+
+head = json.load(open(hf_hub_download("YauhenBichel/privacy-gate-llm", "head-v1.json")))
+enc  = SentenceTransformer("BAAI/bge-m3")
+w, mu, sd = map(np.array, (head["weights"], head["mean"], head["stdev"]))
+
+v = enc.encode(["her biopsy is booked for the 20th"], normalize_embeddings=True)[0]
+score = float(((v - mu) / sd) @ w + head["bias"])
+hold  = score &gt; head["threshold"]        # True</code></pre>
+  </div>
+  <p class="note">
+    <code>normalize_embeddings=True</code> is required, not cosmetic: the head was fitted
+    on unit vectors, and an un-normalised one scores confidently wrong rather than
+    failing. Verified equivalent to the Ollama path to cosine 0.99993.
+  </p>
+
+  <div class="foot">
+    <a href="https://huggingface.co/YauhenBichel/privacy-gate-llm">Model</a> ·
+    <a href="https://github.com/MoleCare/privacy-gate-llm">Code, data and full journal</a> ·
+    Apache-2.0 · Built for <a href="https://www.molecare.co.uk/">MoleCare</a>, which is
+    not a medical device and does not diagnose.
+  </div>
+</div>
+
+<script>
+const DEFAULT = 0.1209;
+let DATA = null, filter = "all";
+
+const fmt = x => (x < 0 ? "−" : "") + Math.abs(x).toFixed(2);
+const pct = x => (100 * x).toFixed(1) + "%";
+const sensitive = r => r.l !== "CLEAN";
+
+function render() {
+  const thr = parseFloat(document.getElementById("thr").value);
+  document.getElementById("tval").textContent = fmt(thr);
+
+  // Headline stats: gold set only, so they are comparable with the journal.
+  const gold = DATA.rows.filter(r => r.set === "gold");
+  const pos = gold.filter(sensitive), neg = gold.filter(r => !sensitive(r));
+  const held = r => r.sc > thr || r.rx;              // rules keep precedence
+  const caught = pos.filter(held).length, fric = neg.filter(held).length;
+
+  document.getElementById("catch").textContent = pct(caught / pos.length);
+  document.getElementById("fric").textContent = pct(fric / neg.length);
+  document.getElementById("leaks").textContent = pos.length - caught;
+
+  const rescued = pos.filter(r => !r.rx && r.sc > thr).length;
+  const missedByRules = pos.filter(r => !r.rx).length;
+  document.getElementById("summary").innerHTML =
+    `Of the <strong>${missedByRules}</strong> sensitive examples the rules miss, this ` +
+    `threshold catches <strong>${rescued}</strong>. ` +
+    (caught === pos.length
+      ? "Nothing leaks here."
+      : `<strong>${pos.length - caught}</strong> still leak.`) +
+    ` It interrupts <strong>${fric}</strong> of ${neg.length} ordinary texts.`;
+
+  const body = document.getElementById("rows");
+  body.innerHTML = "";
+  for (const r of DATA.rows) {
+    const h = held(r), should = sensitive(r);
+    const gap = should && !r.rx && r.sc > thr;
+    const wrong = h !== should;
+    if (filter === "gap" && !gap) continue;
+    if (filter === "wrong" && !wrong) continue;
+    if (filter === "sensitive" && !should) continue;
+    if (filter === "clean" && should) continue;
+    if (filter === "fresh" && r.set !== "fresh") continue;
+    if (filter === "probe" && r.set !== "probe") continue;
+
+    const tr = document.createElement("tr");
+    if (gap) tr.className = "gap";
+    if (wrong) tr.className += " wrong";
+    const text = r.t.length > 150 ? r.t.slice(0, 150) + "…" : r.t;
+    tr.innerHTML =
+      `<td>${esc(text).replace(/\n/g, " ")}</td>` +
+      `<td><span class="pill ${should ? "hold" : "send"}">${should ? r.l : "CLEAN"}</span></td>` +
+      `<td><span class="pill ${r.rx ? "hold" : "send"}">${r.rx ? "HOLD" : "send"}</span></td>` +
+      `<td><span class="pill ${r.sc > thr ? "hold" : "send"}">${r.sc > thr ? "HOLD" : "send"}</span></td>` +
+      `<td class="num">${fmt(r.sc)}</td>`;
+    body.appendChild(tr);
+  }
+}
+
+const esc = s => s.replace(/[&<>"]/g, c =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+const FILTERS = [
+  ["all", "All 247"],
+  ["gap", "Rules miss, gate catches"],
+  ["wrong", "Gate gets it wrong"],
+  ["sensitive", "Sensitive only"],
+  ["clean", "Ordinary only"],
+  ["fresh", "Fresh set (post-training)"],
+  ["probe", "Short probe (held out)"],
+];
+
+fetch("data.json").then(r => r.json()).then(d => {
+  DATA = d;
+  const bar = document.getElementById("filters");
+  for (const [key, label] of FILTERS) {
+    const b = document.createElement("button");
+    b.textContent = label;
+    b.setAttribute("aria-pressed", key === "all");
+    b.onclick = () => {
+      filter = key;
+      [...bar.children].forEach(c => c.setAttribute("aria-pressed", c === b));
+      render();
+    };
+    bar.appendChild(b);
+  }
+  document.getElementById("thr").addEventListener("input", render);
+  document.getElementById("reset").onclick = () => {
+    document.getElementById("thr").value = DEFAULT;
+    render();
+  };
+  render();
+});
+</script>
+</body>
+</html>

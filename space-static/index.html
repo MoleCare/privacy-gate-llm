@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>privacy-gate: must this stay on this machine?</title>
+<meta name="description" content="A 1,024-weight head on bge-m3 that catches health data, credentials and personal data written as plain English. Runs in your browser; nothing you type leaves it.">
+<style>
+:root{--bg:#f8f6f7;--fg:#2c2331;--muted:#6b5f70;--card:#fff;--line:#e3dce3;--hold:#b3261e;--send:#2f7d4f;--accent:#8f2e08;--soft:#f1ecf0}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a1519;--fg:#ece4ea;--muted:#a797a6;--card:#241d24;--line:#3a2f3a;--hold:#ff8a80;--send:#7ed49b;--accent:#f6a57c;--soft:#2e252e}}
+:root[data-theme="dark"]{--bg:#1a1519;--fg:#ece4ea;--muted:#a797a6;--card:#241d24;--line:#3a2f3a;--hold:#ff8a80;--send:#7ed49b;--accent:#f6a57c;--soft:#2e252e}
+*{box-sizing:border-box}body{margin:0;padding:20px 16px 40px;background:var(--bg);color:var(--fg);font:16px/1.5 Ubuntu,system-ui,sans-serif;max-width:960px;margin-inline:auto}
+h1{font-size:26px;margin:0 0 6px}h2{font-size:18px;margin:26px 0 8px}p{margin:8px 0}a{color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin:14px 0}
+textarea{width:100%;min-height:96px;padding:10px;font:inherit;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+button{font:inherit;padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:var(--soft);color:var(--fg);cursor:pointer}button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}button:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.verdict{font-size:30px;font-weight:700}.hold{color:var(--hold)}.send{color:var(--send)}.muted{color:var(--muted);font-size:14px}
+.examples button{text-align:left;white-space:normal;font-size:14px;margin:4px 0;width:100%}
+progress{width:100%;height:10px}table{border-collapse:collapse;width:100%;font-size:14px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+code{background:var(--soft);padding:1px 5px;border-radius:4px;font-size:90%}.tabs{display:flex;gap:6px;margin:18px 0 0}.tabs button[aria-selected=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
+iframe{width:100%;height:1400px;border:1px solid var(--line);border-radius:10px;background:#fff}
+</style>
+</head>
+<body>
+<h1>Must this stay on this machine?</h1>
+<p>A <b>1,024-weight head on <code>bge-m3</code></b> that catches health data, credentials and personal data written as ordinary English, which pattern rules cannot see. It may only ever <i>add</i> a hold behind the rules you already have.</p>
+<p class="muted"><b>Runs in your browser.</b> The encoder (about 570 MB, cached after the first visit) and the head run here; nothing you type is sent anywhere, and this page keeps no logs.
+<a href="https://github.com/MoleCare/privacy-gate-llm">Code, data and journal</a> · <a href="https://huggingface.co/YauhenBichel/privacy-gate-llm">model</a> · <a href="https://huggingface.co/datasets/YauhenBichel/privacy-gate-gold">gold set</a> · <code>pip install privacy-gate</code></p>
+
+<div class="tabs" role="tablist">
+  <button role="tab" aria-selected="true" data-tab="try">Try it</button>
+  <button role="tab" aria-selected="false" data-tab="explore">Explore the gold set</button>
+</div>
+
+<section id="tab-try">
+  <div class="card">
+    <div id="status" class="muted">Loading the encoder in your browser…</div>
+    <progress id="bar" max="100" value="0"></progress>
+    <textarea id="text" placeholder="Paste a sentence, a prompt, a log line… (one per line to score several)"></textarea>
+    <div class="row">
+      <button id="check" class="primary" disabled>Check</button>
+      <label class="muted">Threshold <input id="threshold" type="range" min="-2" max="4" step="0.01" style="vertical-align:middle"> <span id="thr"></span> <span class="muted">(the shipped one is the default; only the verdict moves, not the score)</span></label>
+    </div>
+    <div id="result" style="margin-top:14px"></div>
+  </div>
+  <div class="card examples">
+    <div class="muted">Invented examples. Some the rules cannot see; some look sensitive and are not. The gate is not always right about them, and that is what the gold set and its hard negatives are for.</div>
+    <div id="examples"></div>
+  </div>
+  <p class="muted"><b>The browser encoder is an int8 copy.</b> Measured on the 206 gold examples: the same verdict as the shipped head on every one, but scores differ by 0.35 on the median and up to 1.8. Near the threshold this page and <code>privacy-gate check</code> can disagree; the command line is the reference.</p>
+  <p class="muted"><b>Not a medical device.</b> A privacy tool: it decides whether text should leave a machine and says nothing about what a lesion is. Not production-validated: on data other people made the head keeps its catch on prose and over-holds formal personal correspondence (run 12 in the journal). Apache-2.0. Head <code id="head-sha"></code>.</p>
+</section>
+
+<section id="tab-explore" hidden>
+  <p class="muted">The 147 evaluation examples with five-fold cross-validated scores, the regex ruleset's verdict beside the model's, and the threshold as a slider. Precomputed and committed; this tab scores nothing.</p>
+  <iframe src="explorer/index.html" title="gold-set explorer" loading="lazy"></iframe>
+</section>
+
+<script type="module">
+import { pipeline, env } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0";
+env.allowLocalModels = false;
+const $ = (id) => document.getElementById(id);
+const EXAMPLES = [
+  "The woman from Tuesday's clinic, 34, has a 7mm asymmetric lesion on her left shoulder and a biopsy booked for the 20th.",
+  "Use the key I pasted in the channel yesterday for the staging bucket, it still works.",
+  "My neighbour Tom at number 12 has just started chemo, so keep the noise down this week.",
+  "Her date of birth is the same as mine, 3 March, and she lives above the pharmacy on Mill Road.",
+  "The endpoint returns 401 when the Authorization header is missing; see the OpenAPI example with the placeholder token.",
+  "Melanoma is the most serious form of skin cancer and is treatable when found early.",
+  "Set OPENAI_API_KEY in your environment before running the tests; the fixture uses sk-test-000.",
+  "Thanks! The build is green and the release notes are ready for review.",
+];
+for (const e of EXAMPLES) { const b = document.createElement("button"); b.textContent = e; b.onclick = () => { $("text").value = e; check(); }; $("examples").appendChild(b); }
+for (const b of document.querySelectorAll("[role=tab]")) b.onclick = () => { for (const o of document.querySelectorAll("[role=tab]")) o.setAttribute("aria-selected", o === b); $("tab-try").hidden = b.dataset.tab !== "try"; $("tab-explore").hidden = b.dataset.tab !== "explore"; };
+
+const head = await (await fetch("head-v1.json")).json();
+const sha = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(await (await fetch("head-v1.json")).text()));
+$("head-sha").textContent = [...new Uint8Array(sha)].map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 12);
+$("threshold").value = head.threshold; $("thr").textContent = head.threshold.toFixed(4);
+$("threshold").oninput = () => { $("thr").textContent = (+$("threshold").value).toFixed(4); render(); };
+const score = (v) => { let t = head.bias; for (let i = 0; i < v.length; i++) t += head.weights[i] * (v[i] - head.mean[i]) / head.stdev[i]; return t; };
+
+let extractor = null;
+try {
+  extractor = await pipeline("feature-extraction", "Xenova/bge-m3", { dtype: "q8", progress_callback: (p) => {
+    if (p.status === "progress" && p.file && p.file.includes("onnx")) { $("bar").value = p.progress || 0; $("status").textContent = `Downloading the encoder: ${Math.round(p.progress || 0)} % of ${Math.round((p.total || 0) / 1e6)} MB (once; the browser caches it)`; }
+    if (p.status === "ready") { $("status").textContent = "Encoder ready. Nothing you type leaves this page."; $("bar").value = 100; }
+  }});
+  $("check").disabled = false;
+} catch (e) {
+  $("status").textContent = "The encoder could not load here (" + (e && e.message ? e.message : e) + "). This page needs a browser with WebAssembly and about 600 MB of cache; the command line works everywhere: pip install privacy-gate.";
+}
+
+let last = [];
+async function check() {
+  const lines = $("text").value.split("\n").map(s => s.trim()).filter(Boolean);
+  if (!lines.length || !extractor) return;
+  $("check").disabled = true; $("status").textContent = `Scoring ${lines.length} text${lines.length > 1 ? "s" : ""}…`;
+  const t0 = performance.now();
+  const out = await extractor(lines, { pooling: "cls", normalize: true });
+  const dims = out.dims[1];
+  last = lines.map((text, b) => ({ text, score: score(Array.from(out.data.slice(b * dims, (b + 1) * dims))) }));
+  $("status").textContent = `Scored in ${Math.round(performance.now() - t0)} ms, in this browser.`;
+  $("check").disabled = false; render();
+}
+function render() {
+  const thr = +$("threshold").value;
+  if (!last.length) return;
+  if (last.length === 1) {
+    const { score: s } = last[0]; const hold = s > thr; const margin = s - thr;
+    $("result").innerHTML = `<div class="verdict ${hold ? "hold" : "send"}">${hold ? "HOLD" : "SEND"}</div>
+      <div>score <b>${s.toFixed(3)}</b> · threshold ${thr.toFixed(4)} · margin <b>${(margin >= 0 ? "+" : "") + margin.toFixed(3)}</b></div>
+      ${Math.abs(margin) < 0.5 ? "<div class='muted'>The margin is small: this is the kind of text worth adding to the gold set.</div>" : ""}
+      ${hold ? "" : "<div class='muted'>A <i>send</i> is not an assurance that the text is safe. This is a second gate that may only ever add a hold behind your own rules.</div>"}`;
+  } else {
+    $("result").innerHTML = "<table><tr><th>verdict</th><th>score</th><th>margin</th><th>text</th></tr>" + last.map(({ text, score: s }) =>
+      `<tr><td class="${s > thr ? "hold" : "send"}"><b>${s > thr ? "hold" : "send"}</b></td><td>${s.toFixed(3)}</td><td>${(s - thr).toFixed(3)}</td><td>${text.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c])}</td></tr>`).join("") + "</table>";
+  }
+}
+$("check").onclick = check;
+$("text").addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) check(); });
+</script>
+</body>
+</html>
