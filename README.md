@@ -25,6 +25,20 @@ It exists to sit in front of [`llm-harness`](https://github.com/YauhenBichel/llm
 as a **second** gate, behind the regex ruleset in `rules/v1.yaml`, and to catch what
 patterns cannot see.
 
+## What kind of model this is
+
+**A text classifier on top of a bidirectional encoder.** Not a generative model:
+it never writes a word. `BAAI/bge-m3` turns a piece of text into 1024 numbers,
+and a linear head with 1024 weights turns those into one score, compared against
+a threshold of 0.1209.
+
+The encoder belongs to the family the diagrams label **MLM** — pretrained by
+masking words and predicting them, like BERT, which is what makes it good at
+understanding text rather than continuing it. Only the head is trained here; the
+encoder is used as it ships. That is why the whole decision costs tens of
+milliseconds on a CPU, and why swapping the embedding model breaks it — the head
+has exactly as many weights as bge-m3 has dimensions.
+
 ## Why a model at all, when there are already rules
 
 The rules are good at anything shaped like a marker: `sk-ant-…`, `AKIA…`,
