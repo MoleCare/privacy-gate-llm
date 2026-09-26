@@ -1,6 +1,6 @@
 # Using the gate inside tools you already run
 
-Each of these is a few dozen lines on top of `pip install privacy-gate`. The rule is the same everywhere: the
+Each of these is a few dozen lines on top of `pip install "privacy-gate @ git+https://github.com/MoleCare/privacy-gate-llm"` (PyPI release pending). The rule is the same everywhere: the
 gate may only ever **add** a hold. Keep the deterministic checks you already have in front of it.
 
 | Where | File | What a hold does |
@@ -27,7 +27,7 @@ guardrails:
       url: http://127.0.0.1:11434
 ```
 
-Put the file next to `config.yaml` (or on `PYTHONPATH`), `pip install privacy-gate`, start the proxy. A request
+Put the file next to `config.yaml` (or on `PYTHONPATH`), install the package as above, start the proxy. A request
 whose text must stay goes to `local_model` instead of the model it asked for, and the log line shows why.
 
 ## Open WebUI
