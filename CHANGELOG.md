@@ -2,7 +2,7 @@
 
 All notable changes. The head file has its own history in `docs/JOURNAL.md`; a new head is a new minor version.
 
-## 1.0.0 — unreleased
+## 1.0.0 — 2026-09-29
 
 The first packaged release. The gate itself, `model/head-v1.json`, is the head of 13 September 2026 (run 9),
 unchanged: `bge-m3` plus 1,024 weights and a bias, AUC 0.9927 five-fold on the 206-example gold set.
