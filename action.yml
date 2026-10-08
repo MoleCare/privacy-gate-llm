@@ -53,9 +53,9 @@ runs:
       shell: bash
       run: |
         if [ "${{ inputs.backend }}" = local ]; then
-          pip install -q --extra-index-url https://download.pytorch.org/whl/cpu "privacy-gate[local] @ git+https://github.com/MoleCare/privacy-gate-llm@${{ github.action_ref || 'main' }}"
+          pip install -q --extra-index-url https://download.pytorch.org/whl/cpu "molecare-privacy-gate[local] @ git+https://github.com/MoleCare/privacy-gate-llm@${{ github.action_ref || 'main' }}"
         else
-          pip install -q "privacy-gate @ git+https://github.com/MoleCare/privacy-gate-llm@${{ github.action_ref || 'main' }}"
+          pip install -q "molecare-privacy-gate @ git+https://github.com/MoleCare/privacy-gate-llm@${{ github.action_ref || 'main' }}"
         fi
     - name: Scan the added lines
       id: scan

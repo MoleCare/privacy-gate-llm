@@ -1,6 +1,6 @@
 # Using the gate inside tools you already run
 
-Each of these is a few dozen lines on top of `pip install privacy-gate`. The rule is the same everywhere: the
+Each of these is a few dozen lines on top of `pip install molecare-privacy-gate`. The rule is the same everywhere: the
 gate may only ever **add** a hold. Keep the deterministic checks you already have in front of it.
 
 | Where | File | What a hold does |

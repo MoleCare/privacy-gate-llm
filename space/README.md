@@ -29,7 +29,7 @@ credentials and personal data written as ordinary English, which regex rules can
 a hold behind the rules you already have.
 
 This Space runs the real gate on its CPU (`sentence-transformers`, about a second a sentence) with the head
-shipped in `pip install privacy-gate`. **Nothing typed here is stored.** The third tab is the gold-set explorer:
+shipped in `pip install molecare-privacy-gate`. **Nothing typed here is stored.** The third tab is the gold-set explorer:
 147 evaluation examples with five-fold cross-validated scores, precomputed and committed.
 
 - Code, data and journal: [github.com/MoleCare/privacy-gate-llm](https://github.com/MoleCare/privacy-gate-llm)

@@ -1,7 +1,7 @@
 name: Release
 
 # A tag `vX.Y.Z` builds the wheel and the sdist, checks them, publishes to PyPI by trusted publishing (no
-# token in this repository: set the publisher up once on PyPI under the project `privacy-gate`, workflow
+# token in this repository: set the publisher up once on PyPI under the project `molecare-privacy-gate`, workflow
 # `release.yml`, environment `pypi`), attaches the artefacts to the GitHub release, and pushes the container
 # image to ghcr.io. Nothing here can run on a pull request.
 

@@ -3,7 +3,7 @@ requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
 
 [project]
-name = "privacy-gate"
+name = "molecare-privacy-gate"
 version = "1.0.0"
 description = "A very small model that catches health data, credentials and personal data written as ordinary English, which pattern rules cannot see. bge-m3 plus 1024 weights. A second gate that may only ever add a hold."
 readme = "README.md"
