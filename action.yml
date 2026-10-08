@@ -50,12 +50,14 @@ runs:
         path: ~/.cache/huggingface
         key: privacy-gate-bge-m3-${{ runner.os }}
     - name: Install privacy-gate
+      # From the action's own files: the ref a workflow pinned, or this checkout
+      # for `uses: ./`, never whatever is on main.
       shell: bash
       run: |
         if [ "${{ inputs.backend }}" = local ]; then
-          pip install -q --extra-index-url https://download.pytorch.org/whl/cpu "molecare-privacy-gate[local] @ git+https://github.com/MoleCare/privacy-gate-llm@${{ github.action_ref || 'main' }}"
+          pip install -q --extra-index-url https://download.pytorch.org/whl/cpu "${{ github.action_path }}[local]"
         else
-          pip install -q "molecare-privacy-gate @ git+https://github.com/MoleCare/privacy-gate-llm@${{ github.action_ref || 'main' }}"
+          pip install -q "${{ github.action_path }}"
         fi
     - name: Scan the added lines
       id: scan
