@@ -3,7 +3,7 @@
 
     ollama   Ollama's /api/embed (the default; the head was fitted on its output)
     openai   any OpenAI-compatible /v1/embeddings: a gateway, vLLM, LM Studio, llama.cpp, a cloud service
-    local    sentence-transformers in this process (`pip install 'privacy-gate[local]'`), CPU is enough
+    local    sentence-transformers in this process (`pip install 'molecare-privacy-gate[local]'`), CPU is enough
 
 The first two are standard library only. Every backend must return unit vectors: the gate refuses a vector
 that is not L2-normalised rather than score it, because an un-normalised vector produces a confidently wrong
@@ -115,7 +115,7 @@ class LocalEmbedder:
                 from sentence_transformers import SentenceTransformer
             except ImportError as error:  # pragma: no cover - depends on the environment
                 raise ollama.OllamaError(
-                    "the local backend needs sentence-transformers: pip install 'privacy-gate[local]'"
+                    "the local backend needs sentence-transformers: pip install 'molecare-privacy-gate[local]'"
                 ) from error
             self._model = SentenceTransformer(self.model_id, device=self.device)
         return self._model

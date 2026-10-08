@@ -127,6 +127,6 @@ jobs:
       - name: Install the wheel in an empty environment and run it
         run: |
           python -m venv /tmp/clean && /tmp/clean/bin/pip install -q dist/*.whl
-          /tmp/clean/bin/pip list --format=freeze | grep -v -i -E '^(pip|privacy.gate)=' && { echo "::error::the wheel pulled in a dependency"; exit 1; } || true
+          /tmp/clean/bin/pip list --format=freeze | grep -v -i -E '^(pip|molecare.privacy.gate)=' && { echo "::error::the wheel pulled in a dependency"; exit 1; } || true
           /tmp/clean/bin/privacy-gate info
           /tmp/clean/bin/privacy-gate info | python -c "import json,sys,hashlib; i=json.load(sys.stdin); h=hashlib.sha256(open('model/head-v1.json','rb').read()).hexdigest(); assert i['head_sha256']==h, (i['head_sha256'], h); print('bundled head matches model/head-v1.json', h[:16])"

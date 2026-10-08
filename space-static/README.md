@@ -41,6 +41,6 @@ precomputed and committed.
 - Code, data and journal: [github.com/MoleCare/privacy-gate-llm](https://github.com/MoleCare/privacy-gate-llm)
 - Model: [YauhenBichel/privacy-gate-llm](https://huggingface.co/YauhenBichel/privacy-gate-llm) ·
   data: [YauhenBichel/privacy-gate-gold](https://huggingface.co/datasets/YauhenBichel/privacy-gate-gold) ·
-  `pip install privacy-gate`
+  `pip install molecare-privacy-gate`
 
 A `send` is not an assurance that text is safe. Not production-validated. Not a medical device.

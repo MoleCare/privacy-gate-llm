@@ -12,7 +12,7 @@ little difference near the threshold is a different verdict. This measures it in
 Prints, per backend against the reference: the share of examples with the same verdict, the examples that
 differ (id, label, both scores), the largest score difference, the cosine similarity of the vectors, and the
 catch and friction each backend gets on its own. Standard library only; the `local` backend needs
-`pip install 'privacy-gate[local]'`.
+`pip install 'molecare-privacy-gate[local]'`.
 """
 
 from __future__ import annotations

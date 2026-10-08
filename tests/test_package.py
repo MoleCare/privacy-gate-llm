@@ -177,7 +177,7 @@ class TestLocalBackend(unittest.TestCase):
         with mock.patch.dict(sys.modules, {"sentence_transformers": None}):
             with self.assertRaises(ollama.OllamaError) as ctx:
                 backends.LocalEmbedder().embed(["a"])
-        self.assertIn("privacy-gate[local]", str(ctx.exception))
+        self.assertIn("molecare-privacy-gate[local]", str(ctx.exception))
 
     def test_unknown_backend(self) -> None:
         with self.assertRaises(ValueError):

@@ -6,7 +6,7 @@
 [![Model on HF](https://img.shields.io/badge/%F0%9F%A4%97-model-yellow.svg)](https://huggingface.co/YauhenBichel/privacy-gate-llm)
 [![Demo](https://img.shields.io/badge/%F0%9F%A4%97-demo-yellow.svg)](https://huggingface.co/spaces/YauhenBichel/privacy-gate-llm-demo)
 [![Dataset on HF](https://img.shields.io/badge/%F0%9F%A4%97-dataset-yellow.svg)](https://huggingface.co/datasets/YauhenBichel/privacy-gate-gold)
-[![PyPI](https://img.shields.io/pypi/v/privacy-gate.svg)](https://pypi.org/project/privacy-gate/)
+[![PyPI](https://img.shields.io/pypi/v/molecare-privacy-gate.svg)](https://pypi.org/project/molecare-privacy-gate/)
 [![Contributors](https://img.shields.io/github/contributors/MoleCare/privacy-gate-llm)](https://github.com/MoleCare/privacy-gate-llm#contributors)
 
 A very small model that answers one question about a piece of text:
@@ -90,14 +90,14 @@ loaded shared box, and 18 ms per text when batched.
 ## Install
 
 ```bash
-pip install privacy-gate            # standard library only; the embedding comes from an endpoint you run
+pip install molecare-privacy-gate   # standard library only; the embedding comes from an endpoint you run
 ollama pull bge-m3                  # the default backend: Ollama on 127.0.0.1:11434
 
 privacy-gate check "the woman from Tuesday's clinic has a 7mm lesion on her shoulder"
 # hold  score=6.7200 threshold=0.1209 margin=6.5991
 ```
 
-To install the latest `main` instead: `pip install "privacy-gate @ git+https://github.com/MoleCare/privacy-gate-llm"`.
+To install the latest `main` instead: `pip install "molecare-privacy-gate @ git+https://github.com/MoleCare/privacy-gate-llm"`.
 
 Three places the embedding can come from, one head:
 
@@ -105,7 +105,7 @@ Three places the embedding can come from, one head:
 |---|---|---|
 | `ollama` (default) | `privacy-gate check --backend ollama --url http://127.0.0.1:11434 "..."` | Ollama with `bge-m3` |
 | `openai` | `privacy-gate check --backend openai --url http://127.0.0.1:11500 "..."` | any OpenAI-compatible `/v1/embeddings`: a gateway, vLLM, LM Studio, llama.cpp; a key via `PRIVACY_GATE_API_KEY` if it wants one |
-| `local` | `pip install 'privacy-gate[local]'` then `privacy-gate check --backend local "..."` | sentence-transformers; downloads `BAAI/bge-m3` (2.2 GB) once; CPU is enough |
+| `local` | `pip install 'molecare-privacy-gate[local]'` then `privacy-gate check --backend local "..."` | sentence-transformers; downloads `BAAI/bge-m3` (2.2 GB) once; CPU is enough |
 
 The head was fitted on Ollama's output. Whether the other two backends give the same verdicts is measured, not
 assumed: `scripts/backends_agree.py`, result in `docs/JOURNAL.md`. Every backend must return unit vectors; the

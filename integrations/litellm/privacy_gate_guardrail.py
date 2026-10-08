@@ -19,7 +19,7 @@ guardrails you already run in front of it.
           url: http://127.0.0.1:11434
           min_length: 12           # texts shorter than this are not scored
 
-    pip install privacy-gate            # plus 'privacy-gate[local]' for the in-process encoder
+    pip install molecare-privacy-gate   # plus 'molecare-privacy-gate[local]' for the in-process encoder
     litellm --config config.yaml
 
 A held request carries `metadata.privacy_gate = {"hold": true, "score": ..., "margin": ...}` so the log
