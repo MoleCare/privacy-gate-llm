@@ -268,6 +268,27 @@ anything real. `docs/TAXONOMY.md` lists the decisions still open.
 Contributions that would help most are in `CONTRIBUTING.md`; the short version is
 **more hard negatives** — text that looks sensitive and is not.
 
+## Where it is used and mentioned
+
+Used, behind a switch, by two of our own tools:
+
+- [`llm-harness`](https://github.com/YauhenBichel/llm-harness): step 1b of the
+  router, after the regex ruleset and before anything is sent to a cloud model.
+- [`molecare-mcp`](https://github.com/MoleCare/molecare-mcp): checks tool results
+  before they leave the machine when `PRIVACY_GATE_URL` is set; off in every
+  published install.
+
+Mentioned elsewhere:
+
+- The National Research Council of Canada's
+  [AI Safety Radar](https://nrc-cnrc.github.io/ai-safety-radar-securite-ia/)
+  covered the v1.0.0 release in its
+  [9 October 2026 digest](https://github.com/nrc-cnrc/ai-safety-radar-securite-ia/blob/main/digests/2026-10-09/safety-community.md).
+- On PyPI as [`molecare-privacy-gate`](https://pypi.org/project/molecare-privacy-gate/)
+  since 8 October 2026.
+
+If you use it somewhere, open an issue and it goes on this list.
+
 ## Contributors
 
 Thank you to everyone who has helped privacy-gate-llm. The most useful
