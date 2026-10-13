@@ -37,7 +37,7 @@ jobs:
     runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 10
     steps:
-      - uses: YauhenBichel/merge-cheer@b3d5ac37b98c7dc82063f4771cf7db3da72f4a77 # v1.8.0
+      - uses: YauhenBichel/merge-cheer@714c61072d0b5326deb8f334911d466ee33e2bb3 # v1.9.0
         with:
           model: ${{ vars.LOCAL_MODEL }}
           model-base-url: ${{ vars.LOCAL_MODEL_BASE_URL }}
