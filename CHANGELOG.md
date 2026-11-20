@@ -14,6 +14,8 @@ MoleCare brand. 1.0.0 and 1.0.1 stay on PyPI as `molecare-privacy-gate`; later r
   the same `privacy_gate` package, so do not keep both in one environment.
 - Project URLs: `Homepage` is now the GitHub Pages site, https://yauhenbichel.github.io/privacy-gate-llm/ (also
   the `url` in `CITATION.cff`); the Hugging Face Space stays as `Demo`.
+- Docs: README, `docs/INTEGRATION.md`, `docs/TAXONOMY.md` and the `Gate` docstring name the rules the guard
+  loads, `rules/privacy-v2.yaml` (compiled to `src/privacy_gate/guard/privacy-v2.json`), instead of `rules/v1.yaml`.
 - The live monitor installs `privacy-gate-llm`, and falls back to the former name until the first release under
   the new one is on PyPI.
 

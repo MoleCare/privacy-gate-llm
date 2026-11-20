@@ -61,7 +61,8 @@ text and has no memory of consent.
 
 ## What this model is not
 
-It is a **second** gate. `llm-harness/rules/v1.yaml` runs first and keeps
+It is a **second** gate. The pattern rules (`rules/privacy-v2.yaml`, or
+`llm-harness/rules/v1.yaml` until llm-harness cuts over) run first and keep
 precedence; this model can only ever *add* a privacy verdict, never clear one.
 That composition is deliberate:
 

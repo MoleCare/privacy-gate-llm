@@ -90,8 +90,10 @@ rather than an error:
 
 ## llm-harness
 
-This is what the gate was built for. `rules/v1.yaml` runs first and keeps
-precedence; the gate is a second opinion on everything the rules let through.
+This is what the gate was built for. The pattern rules run first and keep
+precedence (`rules/privacy-v2.yaml` in this repository, compiled to
+`src/privacy_gate/guard/privacy-v2.json`; llm-harness runs its own `rules/v1.yaml`, from
+which v2 was seeded, until its cut-over, ADR 0002); the gate is a second opinion on everything the rules let through.
 
 ```
 prompt ──▶ privacy rules ──hold──▶ local, locked
@@ -124,7 +126,7 @@ Two things worth doing at the same time:
   written by one person.
 
 The three `negative-fixture` cases in `docs/JOURNAL.md` are worth fixing in
-`v1.yaml` while you are in there: they are the whole of the composed system's
+the rules (`rules/privacy-v2.yaml`, then `python scripts/build_rules.py`) while you are in there: they are the whole of the composed system's
 avoidable friction, and the gate already scores them correctly.
 
 ---

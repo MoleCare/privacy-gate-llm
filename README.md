@@ -40,8 +40,8 @@ A very small model that answers one question about a piece of text:
 > diagnose.
 
 It exists to sit in front of [`llm-harness`](https://github.com/YauhenBichel/llm-harness)
-as a **second** gate, behind the regex ruleset in `rules/v1.yaml`, and to catch what
-patterns cannot see.
+as a **second** gate, behind the regex ruleset in `rules/privacy-v2.yaml` (compiled to
+`src/privacy_gate/guard/privacy-v2.json`, which is what the guard loads), and to catch what patterns cannot see.
 
 ## What kind of model this is
 
