@@ -231,8 +231,9 @@ class Matching(unittest.TestCase):
         # and lengths as IBAN_LENGTHS: a country missing from the pattern would never be found.
         (pattern,) = Ruleset.load().rule("PG-IBAN-001").patterns
         lengths: dict[str, int] = {}
-        for countries, rest in re.findall(r"([A-Z]{2}(?:\|[A-Z]{2})*)\)?\\d\{2\}\(\?: \?\[A-Z0-9\]\)\{(\d+)\}",
-                                          pattern.regex):
+        for countries, rest in re.findall(
+            r"([A-Z]{2}(?:\|[A-Z]{2})*)\)?\\d\{2\}\(\?: \?\[A-Z0-9\]\)\{(\d+)\}", pattern.regex
+        ):
             for country in countries.split("|"):
                 self.assertNotIn(country, lengths, country)
                 lengths[country] = int(rest) + 4
@@ -245,7 +246,9 @@ class Matching(unittest.TestCase):
         card, iban = rules.rule("PG-CARD-001"), rules.rule("PG-IBAN-001")
         rng = random.Random(97)
         for _ in range(2000):
-            run = str(rng.randint(2, 6)) + "".join(rng.choice("0123456789") for _ in range(rng.randint(19, 29)))
+            run = str(rng.randint(2, 6)) + "".join(
+                rng.choice("0123456789") for _ in range(rng.randint(19, 29))
+            )
             for text in (run, f"id {run} ok", f"GB{run}"):
                 with self.subTest(text=text):
                     self.assertEqual(card.spans(text), [])
