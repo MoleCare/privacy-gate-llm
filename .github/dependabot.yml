@@ -1,13 +1,32 @@
 version: 2
 updates:
-  # There are no Python dependencies to update: the package is standard library
-  # only, deliberately. If a requirements file ever appears, add a "pip"
-  # ecosystem here.
-
   # Keeps pinned action SHAs current — without this, SHA pinning means staying
   # on a stale version forever.
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directory: "/"  # .github/workflows and the composite action.yml at the root
     schedule:
       interval: "weekly"
     labels: ["dependencies", "github-actions"]
+
+  # The Dockerfile's base images are pinned as `python:3.12-slim@sha256:...`; Dependabot proposes the next
+  # digest of the same tag. Major Python versions are a deliberate change, not a bot PR.
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "docker"]
+    ignore:
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+
+  # The package itself is standard library only (`dependencies = []`), so these are the exact pins around it:
+  # the image's lock (docker/requirements.txt), the Gradio Space, and the `dev` group in pyproject.toml.
+  # Grouped, so a week of bumps is one PR per directory instead of forty.
+  - package-ecosystem: "pip"
+    directories: ["/", "/docker", "/space"]
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "python"]
+    groups:
+      python-minor-and-patch:
+        update-types: ["minor", "patch"]

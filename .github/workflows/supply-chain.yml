@@ -1,0 +1,99 @@
+name: Supply chain
+
+# Two gates on every pull request and push to main, next to the checks in pr-checks.yml:
+#
+# - pip-audit: known vulnerabilities in what we ship or install. The core package has no dependencies
+#   (`dependencies = []`), so "runtime" means the `local` extra as the image installs it (the exact pins in
+#   docker/requirements.txt), plus the pinned `dev` group and the Space's requirements with the gradio version
+#   its README declares. It also runs weekly, because advisories appear without any change here. To accept a
+#   specific advisory, add its ID and a reason to .github/pip-audit-ignore.txt.
+# - image: builds the Dockerfile with buildx (cached in the GitHub Actions cache), never pushes, and smoke-tests
+#   the result with .github/scripts/smoke-image.sh, the same script the release runs before it pushes.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pip-audit:
+    name: pip-audit (image pins, dev group, Space)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install pip-audit
+        run: python -m pip install -q pip-audit==2.10.1
+      # Every line of the ignore file must be `<advisory ID>  # <reason>`; an ignore without a reason fails here.
+      - name: Read the documented ignores
+        run: |
+          while IFS= read -r line || [ -n "$line" ]; do
+            case "$line" in ''|'#'*) continue ;; esac
+            id="$(printf '%s' "${line%%#*}" | tr -d '[:space:]')"
+            reason="$(printf '%s' "${line#*#}" | sed 's/^[[:space:]]*//')"
+            if ! [[ "$id" =~ ^[A-Za-z0-9._-]+$ ]] || [ "$line" = "${line%%#*}" ] || [ -z "$reason" ]; then
+              echo "::error file=.github/pip-audit-ignore.txt::needs '<ID>  # <reason>': $line"
+              exit 1
+            fi
+            echo "ignoring $id: $reason"
+            printf -- '--ignore-vuln\n%s\n' "$id" >> "$RUNNER_TEMP/ignores"
+          done < .github/pip-audit-ignore.txt
+          touch "$RUNNER_TEMP/ignores"
+      # Fully pinned, transitives included, so no resolution is needed: look each pin up as it is.
+      - name: "Audit the image pins (docker/requirements.txt)"
+        run: |
+          mapfile -t ignores < "$RUNNER_TEMP/ignores"
+          pip-audit --progress-spinner off --strict --no-deps --disable-pip -r docker/requirements.txt "${ignores[@]}"
+      - name: "Audit the dev group (pyproject.toml)"
+        run: |
+          mapfile -t ignores < "$RUNNER_TEMP/ignores"
+          python -c "import tomllib; print('\n'.join(tomllib.load(open('pyproject.toml','rb'))['dependency-groups']['dev']))" > "$RUNNER_TEMP/dev.txt"
+          pip-audit --progress-spinner off --strict -r "$RUNNER_TEMP/dev.txt" "${ignores[@]}"
+      # The Space installs this repository from git (audited above as the image) and gradio from `sdk_version`.
+      - name: "Audit the Space (space/requirements.txt and its gradio)"
+        run: |
+          mapfile -t ignores < "$RUNNER_TEMP/ignores"
+          gradio="$(sed -n 's/^sdk_version: *//p' space/README.md)"
+          [ -n "$gradio" ] || { echo "::error::no sdk_version in space/README.md"; exit 1; }
+          { grep -v -E '^[[:space:]]*(#|$|--|privacy-gate @)' space/requirements.txt; echo "gradio==$gradio"; } > "$RUNNER_TEMP/space.txt"
+          cat "$RUNNER_TEMP/space.txt"
+          pip-audit --progress-spinner off --strict -r "$RUNNER_TEMP/space.txt" \
+            --extra-index-url https://download.pytorch.org/whl/cpu "${ignores[@]}"
+
+  image:
+    name: image builds and passes its smoke test
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # The image carries bge-m3 (about 2.2 GB) and torch; the runner's preinstalled SDKs are not needed here.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build (no push)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: false
+          load: true
+          tags: privacy-gate:ci
+          cache-from: type=gha,scope=privacy-gate-image
+          # mode=max keeps the build stage too, so an unchanged requirements file skips the torch install and
+          # the encoder download.
+          cache-to: type=gha,scope=privacy-gate-image,mode=max
+      - name: Smoke test
+        run: .github/scripts/smoke-image.sh privacy-gate:ci

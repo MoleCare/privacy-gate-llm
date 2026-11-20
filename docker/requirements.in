@@ -1,0 +1,3 @@
+# Top-level inputs of docker/requirements.txt (see the command there). Keep in step with the `local` extra.
+torch==2.15.0
+sentence-transformers==6.3.0

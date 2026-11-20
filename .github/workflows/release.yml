@@ -94,9 +94,18 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+      - name: Build
         run: |
           image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/privacy-gate"
           docker build -t "$image:${GITHUB_REF_NAME#v}" -t "$image:latest" .
+      # The same smoke test as the PR image job: non-root, CPU-only torch, healthy, scores offline. Nothing is
+      # pushed unless it passes.
+      - name: Smoke test before pushing
+        run: .github/scripts/smoke-image.sh "ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/privacy-gate:${GITHUB_REF_NAME#v}"
+      - name: Push
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/privacy-gate"
           docker push "$image:${GITHUB_REF_NAME#v}"
           docker push "$image:latest"
