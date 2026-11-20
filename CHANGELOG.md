@@ -4,6 +4,23 @@ All notable changes. The head file has its own history in `docs/JOURNAL.md`; a n
 
 ## Unreleased
 
+Package split: the wheel carries the runtime only.
+
+- **Breaking for anyone importing the training code from the wheel.** `privacy_gate.calibrate`, `.evaluate`,
+  `.embed`, `.dataset`, `.labels`, `.prompt` and `.features` moved to `training/` in the repository, outside the
+  wheel and the sdist, together with the fitting half of `privacy_gate.head` (`fit`, `cross_validate`, `auc`,
+  `folds`, `sweep`, the CLI) and the chat client in `privacy_gate.ollama` (`chat`, `Reply`, `resident`, `pin`,
+  `LABEL_SCHEMA`). Run them from a checkout as `python -m training.<tool>`. `training/README.md` maps the old
+  commands to the new ones.
+- Unchanged: `Gate`, `Decision`, `bundled_head_path`, `privacy_gate.head.Model`, `privacy_gate.backends`,
+  `privacy_gate.ollama.OllamaError` and `DEFAULT_URL`, `privacy_gate.guard`, the bundled head, and the
+  `privacy-gate` command. New: `python -m privacy_gate` is the same command.
+- The measurement scripts moved from `scripts/` to `training/`. No script edits `sys.path` any more: they import
+  the installed package (`pip install -e .` in a checkout). `scripts/build_rules.py` and `scripts/serve.py` stay.
+- Development: `pip install -e . --group dev`. The pre-commit rules check now runs in that environment
+  (`language: system`). Strict mypy covers `training/` and `scripts/` too, and coverage measures `training/`.
+  New tests for the chat client and the `training.head` command raise the coverage floor from 82 to 84.
+
 Guard, phase P0 (design `docs/design/DESIGN-2026-11-20-privacy-guard.md`):
 
 - `rules/privacy-v2.yaml`, schema `privacy-gate-rules/2`: 12 categories, 17 rules with validators, the lite,

@@ -9,7 +9,7 @@ The first two are standard library only. Every backend must return unit vectors:
 that is not L2-normalised rather than score it, because an un-normalised vector produces a confidently wrong
 answer, which is the worst failure a privacy gate can have.
 
-Whether the three agree on the gold set is not assumed; `scripts/backends_agree.py` measures it, and the
+Whether the three agree on the gold set is not assumed; `training/backends_agree.py` measures it, and the
 result is in docs/JOURNAL.md.
 """
 

@@ -4,7 +4,8 @@
 The metric tests matter most: every claim in docs/JOURNAL.md is one of these
 ratios, so a silent change here would rewrite the record.
 
-Run with:  PYTHONPATH=src python3 -m unittest discover -s tests -v
+Run from the repository root:  python -m unittest discover -s tests -v
+(after `pip install -e .`; or PYTHONPATH=src without an install)
 """
 
 from __future__ import annotations
@@ -15,14 +16,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from privacy_gate import features, head
-from privacy_gate.calibrate import NoAnswerPosition, Scored, answer_position, auc, pick, sweep
-from privacy_gate.dataset import load
-from privacy_gate.evaluate import Prediction, score
 from privacy_gate.gate import Gate
 from privacy_gate.head import Model
-from privacy_gate.labels import BINARY, CLEAN, HEALTH, KEEP, SEND, holds, normalise
-from privacy_gate.prompt import build, build_binary
+from training import features, head
+from training.calibrate import NoAnswerPosition, Scored, answer_position, auc, pick, sweep
+from training.dataset import load
+from training.evaluate import Prediction, score
+from training.labels import BINARY, CLEAN, HEALTH, KEEP, SEND, holds, normalise
+from training.prompt import build, build_binary
 
 
 def prediction(id: str, gold: str, predicted: str | None, slice: str = "s") -> Prediction:

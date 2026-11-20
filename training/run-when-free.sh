@@ -10,7 +10,7 @@
 # request that needed a model swap timed out or returned 500. Adding more work
 # only makes both jobs slower.
 #
-#   ./scripts/run-when-free.sh [max_wait_minutes]
+#   ./training/run-when-free.sh [max_wait_minutes]
 #
 # Both steps checkpoint per example, so an interrupted run resumes for free.
 
@@ -46,15 +46,15 @@ log "idle, starting"
 ssh -o ConnectTimeout=20 "$HOST" "cd $REMOTE && git -C . rev-parse --short HEAD 2>/dev/null" >/dev/null 2>&1
 
 log "step 1/2 embeddings (bge-m3) and the logistic head"
-ssh "$HOST" "bash -lc 'cd $REMOTE && PYTHONPATH=src python3 -m privacy_gate.embed \
+ssh "$HOST" "bash -lc 'cd $REMOTE && PYTHONPATH=src python3 -m training.embed \
     --data data/gold.jsonl --out runs/gold-bge-m3.jsonl'" \
-  && ssh "$HOST" "bash -lc 'cd $REMOTE && PYTHONPATH=src python3 -m privacy_gate.head \
+  && ssh "$HOST" "bash -lc 'cd $REMOTE && PYTHONPATH=src python3 -m training.head \
     --embeddings runs/gold-bge-m3.jsonl --rules data/rules-baseline.json \
     --out runs/head-bge-m3.json'" | tee runs/head-bge-m3.md
 log "step 1 exit ${PIPESTATUS[0]:-?}"
 
 log "step 2/2 chat ceiling ($CEILING_MODEL)"
-ssh "$HOST" "bash -lc 'cd $REMOTE && PYTHONPATH=src python3 -m privacy_gate.calibrate \
+ssh "$HOST" "bash -lc 'cd $REMOTE && PYTHONPATH=src python3 -m training.calibrate \
     --model $CEILING_MODEL --rules data/rules-baseline.json \
     --out runs/cal-ceiling.json'" | tee runs/cal-ceiling.md
 log "step 2 exit ${PIPESTATUS[0]:-?}"

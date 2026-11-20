@@ -26,10 +26,12 @@ repos:
     hooks:
       # The same check the guard-rules CI job runs: the compiled rules and the conformance suite must match
       # rules/privacy-v2.yaml, every regex must be RE2-portable and every fixture must pass.
+      # `system`, not `python`: the script imports the engine from the installed package, which an isolated
+      # hook environment cannot see. It runs in the development environment (`pip install -e . --group dev`,
+      # which also pins PyYAML), so activate that venv before committing.
       - id: build-rules-check
         name: guard rules are compiled and every fixture passes
         entry: python scripts/build_rules.py --check
-        language: python
-        additional_dependencies: [pyyaml==6.0.2]
+        language: system
         files: ^(rules/|src/privacy_gate/guard/|scripts/build_rules\.py)
         pass_filenames: false

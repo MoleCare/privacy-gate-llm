@@ -48,6 +48,8 @@ Model = "https://huggingface.co/YauhenBichel/privacy-gate-llm"
 Demo = "https://huggingface.co/spaces/YauhenBichel/privacy-gate-llm-demo"
 Changelog = "https://github.com/YauhenBichel/privacy-gate-llm/blob/main/CHANGELOG.md"
 
+# Only the runtime ships. Training, calibration and evaluation (`training/`) and the rules compiler
+# (`scripts/`) live outside `src/` and are in neither distribution; a maintainer runs them from a checkout.
 [tool.hatch.build.targets.wheel]
 packages = ["src/privacy_gate"]
 
@@ -56,8 +58,13 @@ packages = ["src/privacy_gate"]
 [tool.hatch.build.targets.wheel.force-include]
 "model/head-v1.json" = "privacy_gate/models/head-v1.json"
 
+# Patterns are gitignore-style: a bare "README.md" matches every README.md at any depth, so root files are
+# anchored with a leading "/". Otherwise training/README.md (and the integrations/ and space READMEs) ride along.
 [tool.hatch.build.targets.sdist]
-include = ["src/privacy_gate", "model/head-v1.json", "rules/privacy-v2.yaml", "rules/conformance.v2.json", "rules/conformance.bodies.v2.json", "README.md", "LICENSE", "NOTICE", "CHANGELOG.md", "pyproject.toml"]
+include = [
+  "/src/privacy_gate", "/model/head-v1.json", "/rules/privacy-v2.yaml", "/rules/conformance.v2.json",
+  "/rules/conformance.bodies.v2.json", "/README.md", "/LICENSE", "/NOTICE", "/CHANGELOG.md", "/pyproject.toml",
+]
 
 # Development tools only. Nothing here is a runtime dependency: `dependencies = []` above stays empty, and
 # the `package` CI job fails if the installed wheel pulls anything in. Exact pins, so a new lint rule or a
@@ -98,17 +105,18 @@ external = ["BLE001", "N802"]
 "src/privacy_gate/guard/normalize.py" = ["RUF001", "RUF002", "RUF003"]
 "tests/**" = ["RUF001", "RUF002", "RUF003"]
 # The prompt is model input and every journal number was measured with it; re-wrapping it is not free.
-"src/privacy_gate/prompt.py" = ["E501"]
+"training/prompt.py" = ["E501"]
 # User-facing copy in the Space UI, and Open WebUI reads the filter's front matter one line per key.
 "space/app.py" = ["E501"]
 "integrations/open-webui/privacy_gate_filter.py" = ["E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["privacy_gate"]
+known-first-party = ["privacy_gate", "training"]
 
 [tool.mypy]
 python_version = "3.11"
-files = ["src/privacy_gate"]
+# The training tools moved out of the wheel, not out of the type check.
+files = ["src/privacy_gate", "training", "scripts"]
 mypy_path = "src"
 strict = true
 warn_unreachable = true
@@ -119,15 +127,33 @@ warn_unreachable = true
 module = ["sentence_transformers", "sentence_transformers.*"]
 ignore_missing_imports = true
 
+# The same for the comparison systems training/public_sets.py imports lazily, only when asked for.
+[[tool.mypy.overrides]]
+module = ["presidio_analyzer", "presidio_analyzer.*", "gliner", "gliner.*"]
+ignore_missing_imports = true
+
 [tool.coverage.run]
 branch = true
-source = ["privacy_gate"]
+# `training` is measured because most of it (calibrate, evaluate, embed, dataset, labels, prompt, features and
+# the fitting half of head) was measured as part of `privacy_gate` before it moved out of the wheel. The five
+# command-line measurements below came from scripts/, were never in the coverage source, and need a live
+# endpoint or the llm-harness CLI; they are omitted so the number stays like for like. public_sets.py also came
+# from scripts/, but it has unit tests, so it is counted.
+source = ["privacy_gate", "training"]
+omit = [
+  "training/backends_agree.py",
+  "training/latency.py",
+  "training/lexical_baseline.py",
+  "training/rules_oracle.py",
+  "training/score_heldout.py",
+]
 
 [tool.coverage.report]
-# Measured 82.73 % (branch) when this floor was set. The gap is the parts that need a live Ollama or a model:
-# embed.py, ollama.py, and the CLI halves of calibrate.py, evaluate.py and head.py. Raise it as tests land;
-# never lower it to make a red build green.
-fail_under = 82
+# 82 was set at 82.73 % (branch). The package split moved the training code to training/ (still measured) and
+# added tests for training/chat.py and the training.head command: 84.52 % when the floor was raised to 84. The
+# gap is the parts that need a live Ollama or a model: training/embed.py, ollama.py, and the CLI halves of
+# training/calibrate.py and evaluate.py. Raise it as tests land; never lower it to make a red build green.
+fail_under = 84
 show_missing = true
 skip_covered = true
 exclude_also = [

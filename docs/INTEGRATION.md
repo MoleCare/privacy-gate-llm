@@ -31,7 +31,7 @@ gate.decide_many([...])   # one embedding call for the whole batch
 ### 2. The HTTP sidecar, for everything else
 
 ```bash
-python3 scripts/serve.py --head model/head-v1.json --port 8231
+privacy-gate serve --head model/head-v1.json --port 8231   # or: python -m privacy_gate serve ...
 ```
 
 ```bash

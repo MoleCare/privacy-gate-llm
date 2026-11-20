@@ -4,22 +4,19 @@
 
 Needs nothing but Python. Run it before quoting any neural number:
 
-    PYTHONPATH=src python3 scripts/lexical_baseline.py
+    python -m training.lexical_baseline
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
-
-from privacy_gate import head
-from privacy_gate.dataset import load
-from privacy_gate.features import length_report, vectorise
-from privacy_gate.labels import holds
+from training import head
+from training.dataset import load
+from training.features import length_report, vectorise
+from training.labels import holds
 
 
 def main() -> int:

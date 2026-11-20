@@ -39,27 +39,35 @@ one* — there is a test that proves it
 (`test_in_sample_fit_separates_random_labels`). In-sample accuracy here is not a
 weak result, it is a meaningless one.
 
-`head.cross_validate` is the only function whose output belongs in the journal.
+`training.head.cross_validate` is the only function whose output belongs in the journal.
 
 ## Getting set up
 
-There is nothing to install:
+The package has no dependencies, so the only install is the package itself, in editable mode:
 
 ```bash
 git clone https://github.com/YauhenBichel/privacy-gate-llm.git
 cd privacy-gate-llm
-PYTHONPATH=src python3 -m unittest discover -s tests -v
+python3 -m venv .venv && . .venv/bin/activate
+pip install -e .
+python -m unittest discover -s tests -v
 ```
 
-Python 3.11 or newer. The tests need no network and no model.
+Python 3.11 or newer. The tests need no network and no model. They also run with
+no install at all, which is how the `tests` CI job proves the core is standard
+library only: `PYTHONPATH=src python3 -m unittest discover -s tests -v`.
+
+The wheel carries only the runtime (`src/privacy_gate`). Retraining and
+measuring live in `training/` and run from the repository root as
+`python -m training.<tool>`; see `training/README.md`.
 
 To run the parts that need embeddings you need an [Ollama](https://ollama.com)
 endpoint with `bge-m3`:
 
 ```bash
 ollama pull bge-m3
-PYTHONPATH=src python3 -m privacy_gate.embed --data data/gold.jsonl --out runs/gold-bge-m3.jsonl
-PYTHONPATH=src python3 -m privacy_gate.head --embeddings runs/gold-bge-m3.jsonl \
+python -m training.embed --data data/gold.jsonl --out runs/gold-bge-m3.jsonl
+python -m training.head --embeddings runs/gold-bge-m3.jsonl \
     --rules data/rules-baseline.json
 ```
 
@@ -71,7 +79,7 @@ in `pyproject.toml` and are never runtime dependencies:
 ```bash
 python3 -m venv .venv && . .venv/bin/activate
 python -m pip install -U "pip>=25.1"     # `--group` needs pip 25.1+; or use `uv sync --group dev`
-python -m pip install --group dev
+python -m pip install -e . --group dev   # the package (editable) and the pinned tools
 pre-commit install                       # ruff, ruff-format, whitespace, YAML, and the guard-rules check
 ```
 
@@ -80,8 +88,8 @@ The `lint, types and coverage` CI job runs exactly these, so run them before you
 ```bash
 ruff check .
 ruff format --check .
-mypy                                     # strict, over src/privacy_gate
-PYTHONPATH=src coverage run -m unittest discover -s tests && coverage report
+mypy                                     # strict, over src/privacy_gate, training/ and scripts/
+coverage run -m unittest discover -s tests && coverage report
 python scripts/build_rules.py --check    # if you touched rules/ or src/privacy_gate/guard/
 python -m build && twine check dist/*
 ```

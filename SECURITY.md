@@ -53,7 +53,7 @@ would make its `SECRET` label wrong rather than the fixture safe — the same tr
 that produced the mislabelled `rgx-009` (see `docs/JOURNAL.md` run 9).
 
 `.github/secret_scanning.yml` therefore excludes `data/gold.jsonl` and
-`data/fresh.jsonl`, and only those. `src/`, `scripts/` and `docs/` are still
+`data/fresh.jsonl`, and only those. `src/`, `training/`, `scripts/` and `docs/` are still
 scanned, because a real credential committed there would be a real problem.
 
 **If an alert fires on anything outside `data/`, treat it as real until proven
@@ -103,7 +103,7 @@ fix is a lower-entropy fixture, not an exclusion.
 
 ## Running the evaluation
 
-`scripts/rules_oracle.py` shells out to `llm-harness explain`, which decides
+`training/rules_oracle.py` shells out to `llm-harness explain`, which decides
 locally and sends nothing to any backend. That is why it is safe to run over a
 file full of fixtures.
 

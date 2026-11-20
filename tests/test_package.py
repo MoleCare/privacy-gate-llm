@@ -4,11 +4,13 @@ No network and no model: every backend is faked at the boundary it talks through
 
 from __future__ import annotations
 
+import ast
 import io
 import json
 import logging
 import math
 import socket
+import subprocess
 import sys
 import threading
 import types
@@ -16,6 +18,7 @@ import unittest
 import urllib.request
 from contextlib import redirect_stderr, redirect_stdout
 from http.client import HTTPConnection
+from pathlib import Path
 from unittest import mock
 
 from privacy_gate import backends, cli, ollama
@@ -389,6 +392,36 @@ class TestSidecar(unittest.TestCase):
             # promise ten bytes and send none: the server must close the socket, not wait forever
             sock.sendall(b"POST /check HTTP/1.1\r\nHost: x\r\nContent-Length: 10\r\n\r\n")
             self.assertEqual(sock.recv(1), b"")
+
+
+class TestRuntimeOnly(unittest.TestCase):
+    """The wheel ships the runtime and nothing a maintainer only needs to retrain or measure the head."""
+
+    PACKAGE = Path(__file__).resolve().parent.parent / "src" / "privacy_gate"
+    MOVED = ("calibrate", "evaluate", "embed", "dataset", "labels", "prompt", "features")
+
+    def test_training_modules_live_outside_the_package(self) -> None:
+        for name in self.MOVED:
+            self.assertFalse((self.PACKAGE / f"{name}.py").exists(), f"{name}.py is back in src/privacy_gate")
+
+    def test_the_package_never_imports_training(self) -> None:
+        for path in self.PACKAGE.rglob("*.py"):
+            for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+                if isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+                    names = [node.module]
+                elif isinstance(node, ast.Import):
+                    names = [alias.name for alias in node.names]
+                else:
+                    continue
+                for name in names:
+                    self.assertNotEqual(name.split(".")[0], "training", f"{path.name} imports {name}")
+
+    def test_python_dash_m_is_the_cli(self) -> None:
+        done = subprocess.run(
+            [sys.executable, "-m", "privacy_gate", "--help"], capture_output=True, text=True, check=False
+        )
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn("serve", done.stdout)
 
 
 if __name__ == "__main__":

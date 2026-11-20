@@ -23,8 +23,8 @@ import json
 import sys
 from pathlib import Path
 
-from . import ollama
-from .dataset import load
+from privacy_gate import ollama
+from training.dataset import load
 
 DEFAULT_MODEL = "bge-m3"
 
