@@ -14,12 +14,17 @@ authors = [{ name = "Yauhen Bichel" }]
 keywords = [
   "privacy", "pii", "phi", "pii-detection", "phi-detection", "guardrails", "llm-safety", "llm-router",
   "prompt-guard", "data-loss-prevention", "gdpr", "healthcare", "embeddings", "bge-m3", "ollama",
-  "sentence-transformers", "text-classification",
+  "sentence-transformers", "text-classification", "prompt-privacy", "llm-guardrail", "local-llm-router",
+  "secret-detection", "privacy-filter", "openai", "claude",
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "Intended Audience :: Information Technology",
+  "Intended Audience :: Healthcare Industry",
+  "Intended Audience :: Science/Research",
+  "Environment :: Console",
+  "Natural Language :: English",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.11",
@@ -28,7 +33,9 @@ classifiers = [
   "Topic :: Security",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
   "Topic :: Text Processing :: Linguistic",
+  "Topic :: Software Development :: Libraries :: Python Modules",
   "Operating System :: OS Independent",
+  "Typing :: Typed",
 ]
 # The core is standard library only, on purpose: it runs anywhere Python does. The embedding comes from
 # an Ollama or OpenAI-compatible endpoint you already run. `local` adds an in-process encoder.
@@ -42,11 +49,14 @@ privacy-gate = "privacy_gate.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/YauhenBichel/privacy-gate-llm"
-Repository = "https://github.com/YauhenBichel/privacy-gate-llm"
-Issues = "https://github.com/YauhenBichel/privacy-gate-llm/issues"
-Model = "https://huggingface.co/YauhenBichel/privacy-gate-llm"
 Demo = "https://huggingface.co/spaces/YauhenBichel/privacy-gate-llm-demo"
+"Demo (GitHub Pages)" = "https://yauhenbichel.github.io/privacy-gate-llm/"
+Documentation = "https://github.com/YauhenBichel/privacy-gate-llm/blob/main/docs/INTEGRATION.md"
+Source = "https://github.com/YauhenBichel/privacy-gate-llm"
+Issues = "https://github.com/YauhenBichel/privacy-gate-llm/issues"
 Changelog = "https://github.com/YauhenBichel/privacy-gate-llm/blob/main/CHANGELOG.md"
+Model = "https://huggingface.co/YauhenBichel/privacy-gate-llm"
+Dataset = "https://huggingface.co/datasets/YauhenBichel/privacy-gate-gold"
 
 # Only the runtime ships. Training, calibration and evaluation (`training/`) and the rules compiler
 # (`scripts/`) live outside `src/` and are in neither distribution; a maintainer runs them from a checkout.

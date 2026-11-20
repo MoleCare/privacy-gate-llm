@@ -1,12 +1,26 @@
 # privacy-gate-llm
 
+**[Try it in your browser](https://huggingface.co/spaces/YauhenBichel/privacy-gate-llm-demo)** (nothing you type
+leaves the page; mirror on [GitHub Pages](https://yauhenbichel.github.io/privacy-gate-llm/)) ·
+`pip install molecare-privacy-gate` · `docker run ghcr.io/yauhenbichel/privacy-gate`
+
+**privacy-gate is an open-source PII and PHI detection gate for LLM prompts.** Before a prompt leaves your machine
+for a cloud model (Claude, OpenAI, DeepSeek), it answers one question: must this text stay local? It catches health
+data, personal data and credentials written as ordinary English, which regex rules cannot see, and it is built for
+developers who run a **local LLM router** and want a **prompt privacy** check or **LLM guardrail** in front of the
+cloud: data loss prevention for prompts, as a second gate that may only ever add a hold. A small model, `bge-m3` plus
+1,024 weights, that runs on a CPU, with a Python package, a CLI, an HTTP sidecar and a Docker image.
+
+[![PyPI](https://img.shields.io/pypi/v/molecare-privacy-gate.svg)](https://pypi.org/project/molecare-privacy-gate/)
+[![GHCR](https://img.shields.io/badge/ghcr.io-privacy--gate-2496ED?logo=docker&logoColor=white)](https://github.com/YauhenBichel/privacy-gate-llm/pkgs/container/privacy-gate)
+[![PR checks](https://github.com/YauhenBichel/privacy-gate-llm/actions/workflows/pr-checks.yml/badge.svg?branch=main)](https://github.com/YauhenBichel/privacy-gate-llm/actions/workflows/pr-checks.yml)
+[![Hugging Face Space](https://img.shields.io/badge/%F0%9F%A4%97%20Space-try%20it-yellow)](https://huggingface.co/spaces/YauhenBichel/privacy-gate-llm-demo)
+[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-demo%20mirror-222?logo=github)](https://yauhenbichel.github.io/privacy-gate-llm/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](./LICENSE)
 [![Python](https://img.shields.io/badge/python-%3E%3D3.11-brightgreen.svg)](https://www.python.org/)
-[![Dependencies](https://img.shields.io/badge/dependencies-none-lightgrey.svg)](#running-it)
+[![Dependencies](https://img.shields.io/badge/dependencies-none-lightgrey.svg)](#install)
 [![Model on HF](https://img.shields.io/badge/%F0%9F%A4%97-model-yellow.svg)](https://huggingface.co/YauhenBichel/privacy-gate-llm)
-[![Demo](https://img.shields.io/badge/%F0%9F%A4%97-demo-yellow.svg)](https://huggingface.co/spaces/YauhenBichel/privacy-gate-llm-demo)
 [![Dataset on HF](https://img.shields.io/badge/%F0%9F%A4%97-dataset-yellow.svg)](https://huggingface.co/datasets/YauhenBichel/privacy-gate-gold)
-[![PyPI](https://img.shields.io/pypi/v/molecare-privacy-gate.svg)](https://pypi.org/project/molecare-privacy-gate/)
 [![Contributors](https://img.shields.io/github/contributors/YauhenBichel/privacy-gate-llm)](https://github.com/YauhenBichel/privacy-gate-llm#contributors)
 
 A very small model that answers one question about a piece of text:
