@@ -1,6 +1,6 @@
 """
 title: privacy-gate
-author: MoleCare
+author: Yauhen Bichel
 author_url: https://github.com/YauhenBichel/privacy-gate-llm
 version: 1.0.0
 license: Apache-2.0

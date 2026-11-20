@@ -1,7 +1,7 @@
 # training/
 
 Maintainer tools: retrain the head and measure it. None of this is in the wheel or the sdist.
-`pip install molecare-privacy-gate` ships only `src/privacy_gate`, which is the runtime.
+`pip install privacy-gate-llm` ships only `src/privacy_gate`, which is the runtime.
 
 ## Running them
 

@@ -3,7 +3,7 @@ requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
 
 [project]
-name = "molecare-privacy-gate"
+name = "privacy-gate-llm"
 version = "1.0.1"
 description = "A very small model that catches health data, credentials and personal data written as ordinary English, which pattern rules cannot see. bge-m3 plus 1024 weights. A second gate that may only ever add a hold."
 readme = "README.md"
@@ -48,9 +48,8 @@ local = ["sentence-transformers>=3.0"]
 privacy-gate = "privacy_gate.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/YauhenBichel/privacy-gate-llm"
+Homepage = "https://yauhenbichel.github.io/privacy-gate-llm/"
 Demo = "https://huggingface.co/spaces/YauhenBichel/privacy-gate-llm-demo"
-"Demo (GitHub Pages)" = "https://yauhenbichel.github.io/privacy-gate-llm/"
 Documentation = "https://github.com/YauhenBichel/privacy-gate-llm/blob/main/docs/INTEGRATION.md"
 Source = "https://github.com/YauhenBichel/privacy-gate-llm"
 Issues = "https://github.com/YauhenBichel/privacy-gate-llm/issues"

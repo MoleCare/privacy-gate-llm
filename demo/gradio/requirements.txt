@@ -6,5 +6,6 @@ torch==2.15.0
 sentence-transformers==6.3.0
 # Floor for the Pillow advisories fixed in 13.0.0 (gradio is the one that pulls Pillow in; gradio 6.28 capped it below 13).
 pillow==13.0.0
-# The published distribution is molecare-privacy-gate; `privacy-gate @ git+...` named a package that does not exist.
+# The distribution is now privacy-gate-llm, but no release exists under that name yet, and pip-audit (a required
+# check) resolves this pin. Switch to `privacy-gate-llm[local]==X.Y.Z` in the first release under the new name.
 molecare-privacy-gate[local]==1.0.1

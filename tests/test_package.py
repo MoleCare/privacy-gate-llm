@@ -199,7 +199,7 @@ class TestLocalBackend(unittest.TestCase):
             self.assertRaises(ollama.OllamaError) as ctx,
         ):
             backends.LocalEmbedder().embed(["a"])
-        self.assertIn("molecare-privacy-gate[local]", str(ctx.exception))
+        self.assertIn("privacy-gate-llm[local]", str(ctx.exception))
 
     def test_unknown_backend(self) -> None:
         with self.assertRaises(ValueError):
