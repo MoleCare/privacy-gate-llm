@@ -43,7 +43,7 @@
 
 schema: privacy-gate-rules/2
 id: privacy-v2
-version: "2.0.0"
+version: "2.1.0"
 updated: "2026-11-20"
 seeded_from:
   repo: llm-harness
@@ -291,9 +291,13 @@ rules:
     rationale: >
       13 to 19 digits starting with a card network's leading digit, in groups or not, passing Luhn.
       Published test numbers are excepted: they cannot be charged and they appear in every payments
-      tutorial.
+      tutorial. A regex returns one candidate per position and Luhn judges only that one, so there are two
+      patterns: the longest candidate (a 19-digit card) and the shortest (a card followed by more digits
+      after a space or hyphen, as in a pasted table row). Both end at a word boundary, so an unbroken run of
+      20 or more digits is never a card, whatever its prefix.
     patterns:
       - '\b[2-6](?:\d[ -]?){11,17}\d\b'
+      - '\b[2-6](?:\d[ -]?){11,17}?\d\b'
     validator: luhn
     except_values:
       - '4111111111111111'
@@ -314,11 +318,22 @@ rules:
       fail:
         - 'charge ⟦4000 1234 5678 9017⟧ again'
         - 'card=⟦4000123456789017⟧'
+        # A card followed by more digits after a separator: the card is the shorter candidate, not the run.
+        - 'charge ⟦4000 1234 5678 9017⟧ 99 again'
+        - 'card ⟦4000-1234-5678-9017⟧-99, expires soon'
+        - 'pan=⟦4000123456789017⟧ 99'
       pass:
         - '4111 1111 1111 1111 is the test Visa'
         - 'use 4242424242424242 in test mode'
         - 'order 4000123456789010 shipped'
         - 'timestamp 1732096800000'
+        - '4111 1111 1111 1111 99 is still the test Visa'
+        # Unbroken runs of 20 to 30 digits are references and hashes, not cards, even when a prefix passes Luhn.
+        - 'ref 40001234567890179'
+        - 'trace 400012345678901799'
+        - 'row 40001234567890170000'
+        - 'id 4000123456789017123456789012'
+        - 'blob 512345678901234567890123456789'
 
   # -------------------------------------------------------------------------- patient_or_national_id ----
   - id: PG-PATIENT-001
@@ -497,17 +512,55 @@ rules:
   - id: PG-IBAN-001
     title: IBAN (country length and mod 97)
     category: iban
+    rationale: >
+      An IBAN's length is fixed by its country, so the pattern takes exactly that many characters after the
+      country code instead of the longest run: mod 97 then judges the IBAN itself, not the IBAN plus
+      whatever digits or text follow it. One alternative per length, from IBAN_LENGTHS in
+      src/privacy_gate/guard/validators.py (a test keeps the two in step). No trailing boundary, so an IBAN
+      glued to a currency code or a reference still matches; a country code is required, so a bare digit run
+      never does.
     patterns:
-      - '\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]){11,30}\b'
+      - "\\b(?:\
+        NO\\d{2}(?: ?[A-Z0-9]){11}\
+        |BE\\d{2}(?: ?[A-Z0-9]){12}\
+        |(?:DK|FI|FO|GL|NL)\\d{2}(?: ?[A-Z0-9]){14}\
+        |(?:MK|SI)\\d{2}(?: ?[A-Z0-9]){15}\
+        |(?:AT|BA|EE|KZ|LT|LU|XK)\\d{2}(?: ?[A-Z0-9]){16}\
+        |(?:CH|HR|LI|LV)\\d{2}(?: ?[A-Z0-9]){17}\
+        |(?:BG|BH|CR|DE|GB|GE|IE|ME|RS|VA)\\d{2}(?: ?[A-Z0-9]){18}\
+        |(?:AE|GI|IL|IQ|TL)\\d{2}(?: ?[A-Z0-9]){19}\
+        |(?:AD|CZ|ES|MD|PK|RO|SA|SE|SK|TN|VG)\\d{2}(?: ?[A-Z0-9]){20}\
+        |(?:PT|ST)\\d{2}(?: ?[A-Z0-9]){21}\
+        |(?:IS|TR)\\d{2}(?: ?[A-Z0-9]){22}\
+        |(?:FR|GR|IT|MC|MR|SM)\\d{2}(?: ?[A-Z0-9]){23}\
+        |(?:AL|AZ|BY|CY|DO|GT|HU|LB|PL|SV)\\d{2}(?: ?[A-Z0-9]){24}\
+        |(?:BR|EG|PS|QA|UA)\\d{2}(?: ?[A-Z0-9]){25}\
+        |(?:JO|KW|MU)\\d{2}(?: ?[A-Z0-9]){26}\
+        |(?:MT|SC)\\d{2}(?: ?[A-Z0-9]){27}\
+        |LC\\d{2}(?: ?[A-Z0-9]){28}\
+        )"
     validator: iban_mod97
     fixtures:
       fail:
         # The ECBS documentation examples for the UK and Germany.
         - 'pay ⟦GB82 WEST 1234 5698 7654 32⟧ by Friday'
         - 'IBAN: ⟦DE89370400440532013000⟧.'
+        # Followed by more digits, spaced or glued on, or glued to text: the country's length decides the end.
+        - 'pay ⟦GB82 WEST 1234 5698 7654 32⟧ 99 by Friday'
+        - 'ref ⟦GB82WEST12345698765432⟧99'
+        - 'IBAN:⟦DE89370400440532013000⟧EUR'
+        - 'to ⟦DE89 3704 0044 0532 0130 00⟧ 12 EUR'
+        # The ISO 13616 examples for the Netherlands, Belgium and France (lengths 18, 16 and 27).
+        - '⟦NL91ABNA0417164300⟧ and ⟦BE68 5390 0754 7034⟧'
+        - 'FR: ⟦FR14 2004 1010 0505 0001 3M02 606⟧ 7'
       pass:
         - 'IBAN: GB82 WEST 1234 5698 7654 33'
         - 'the IBAN field is optional'
+        - 'IBAN: GB82 WEST 1234 5698 7654 33 99'
+        - 'DE00123456789012345678901234 is a reference'
+        # Digit runs of 20 to 30 have no country code, so they are never IBANs.
+        - '12345678901234567890'
+        - '829012345698765432123456789012'
 
   # --------------------------------------------------------------------------------------- private_ip ----
   - id: PG-IP-001

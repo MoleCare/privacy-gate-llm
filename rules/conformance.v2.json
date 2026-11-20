@@ -3,8 +3,8 @@
  "note": "Generated from rules/privacy-v2.yaml by scripts/build_rules.py. Do not edit by hand. For each case, the rule alone, run on `text` with no normalisation, must report exactly `spans` ([start, end) in Unicode code points, sorted, disjoint). `kind: pass` cases report none.",
  "ruleset": {
   "id": "privacy-v2",
-  "version": "2.0.0",
-  "sha256": "c7791530201c32427467133495edf2d1d4ff05d0ac6be8f720fd2678fe8d4f0f"
+  "version": "2.1.0",
+  "sha256": "62d79118f1ec5c1e778aae53f8930161c10a5b1c5dd839a985800e82cce9c33d"
  },
  "cases": [
   {
@@ -490,6 +490,45 @@
   {
    "rule": "PG-CARD-001",
    "category": "card",
+   "kind": "fail",
+   "text": "charge 4000 1234 5678 9017 99 again",
+   "spans": [
+    [
+     7,
+     26
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-CARD-001",
+   "category": "card",
+   "kind": "fail",
+   "text": "card 4000-1234-5678-9017-99, expires soon",
+   "spans": [
+    [
+     5,
+     24
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-CARD-001",
+   "category": "card",
+   "kind": "fail",
+   "text": "pan=4000123456789017 99",
+   "spans": [
+    [
+     4,
+     20
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-CARD-001",
+   "category": "card",
    "kind": "pass",
    "text": "4111 1111 1111 1111 is the test Visa",
    "spans": [],
@@ -516,6 +555,54 @@
    "category": "card",
    "kind": "pass",
    "text": "timestamp 1732096800000",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-CARD-001",
+   "category": "card",
+   "kind": "pass",
+   "text": "4111 1111 1111 1111 99 is still the test Visa",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-CARD-001",
+   "category": "card",
+   "kind": "pass",
+   "text": "ref 40001234567890179",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-CARD-001",
+   "category": "card",
+   "kind": "pass",
+   "text": "trace 400012345678901799",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-CARD-001",
+   "category": "card",
+   "kind": "pass",
+   "text": "row 40001234567890170000",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-CARD-001",
+   "category": "card",
+   "kind": "pass",
+   "text": "id 4000123456789017123456789012",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-CARD-001",
+   "category": "card",
+   "kind": "pass",
+   "text": "blob 512345678901234567890123456789",
    "spans": [],
    "aliases": []
   },
@@ -1209,6 +1296,88 @@
   {
    "rule": "PG-IBAN-001",
    "category": "iban",
+   "kind": "fail",
+   "text": "pay GB82 WEST 1234 5698 7654 32 99 by Friday",
+   "spans": [
+    [
+     4,
+     31
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IBAN-001",
+   "category": "iban",
+   "kind": "fail",
+   "text": "ref GB82WEST1234569876543299",
+   "spans": [
+    [
+     4,
+     26
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IBAN-001",
+   "category": "iban",
+   "kind": "fail",
+   "text": "IBAN:DE89370400440532013000EUR",
+   "spans": [
+    [
+     5,
+     27
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IBAN-001",
+   "category": "iban",
+   "kind": "fail",
+   "text": "to DE89 3704 0044 0532 0130 00 12 EUR",
+   "spans": [
+    [
+     3,
+     30
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IBAN-001",
+   "category": "iban",
+   "kind": "fail",
+   "text": "NL91ABNA0417164300 and BE68 5390 0754 7034",
+   "spans": [
+    [
+     0,
+     18
+    ],
+    [
+     23,
+     42
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IBAN-001",
+   "category": "iban",
+   "kind": "fail",
+   "text": "FR: FR14 2004 1010 0505 0001 3M02 606 7",
+   "spans": [
+    [
+     4,
+     37
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IBAN-001",
+   "category": "iban",
    "kind": "pass",
    "text": "IBAN: GB82 WEST 1234 5698 7654 33",
    "spans": [],
@@ -1219,6 +1388,38 @@
    "category": "iban",
    "kind": "pass",
    "text": "the IBAN field is optional",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IBAN-001",
+   "category": "iban",
+   "kind": "pass",
+   "text": "IBAN: GB82 WEST 1234 5698 7654 33 99",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IBAN-001",
+   "category": "iban",
+   "kind": "pass",
+   "text": "DE00123456789012345678901234 is a reference",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IBAN-001",
+   "category": "iban",
+   "kind": "pass",
+   "text": "12345678901234567890",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IBAN-001",
+   "category": "iban",
+   "kind": "pass",
+   "text": "829012345698765432123456789012",
    "spans": [],
    "aliases": []
   },

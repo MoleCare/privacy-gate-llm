@@ -11,6 +11,8 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import random
+import re
 import time
 import unittest
 from pathlib import Path
@@ -18,6 +20,7 @@ from pathlib import Path
 from privacy_gate.guard import RulesError, Ruleset
 from privacy_gate.guard.rules import DEFAULT_RULES_PATH, check_portable
 from privacy_gate.guard.validators import (
+    IBAN_LENGTHS,
     iban_mod97,
     luhn,
     nhs_mod11,
@@ -178,6 +181,32 @@ class Matching(unittest.TestCase):
         # re.ASCII, an address after an accented letter is found the same way in every engine.
         rule = Ruleset.load().rule("PG-EMAIL-001")
         self.assertEqual(rule.spans("é" + "ana@northgate.internal"), [(1, 23)])
+
+    def test_iban_pattern_lengths_follow_the_registry(self) -> None:
+        # PG-IBAN-001 takes exactly the country's length, so its alternatives must list the same countries
+        # and lengths as IBAN_LENGTHS: a country missing from the pattern would never be found.
+        (pattern,) = Ruleset.load().rule("PG-IBAN-001").patterns
+        lengths: dict[str, int] = {}
+        for countries, rest in re.findall(r"([A-Z]{2}(?:\|[A-Z]{2})*)\)?\\d\{2\}\(\?: \?\[A-Z0-9\]\)\{(\d+)\}",
+                                          pattern.regex):
+            for country in countries.split("|"):
+                self.assertNotIn(country, lengths, country)
+                lengths[country] = int(rest) + 4
+        self.assertEqual(lengths, IBAN_LENGTHS)
+
+    def test_unbroken_digit_runs_are_neither_cards_nor_ibans(self) -> None:
+        # A valid card or IBAN followed by more digits is found (the conformance fixtures), but a run of 20 to
+        # 30 digits with no separator is a reference or a hash, and must not fire however its prefixes check.
+        rules = Ruleset.load()
+        card, iban = rules.rule("PG-CARD-001"), rules.rule("PG-IBAN-001")
+        rng = random.Random(97)
+        for _ in range(2000):
+            run = str(rng.randint(2, 6)) + "".join(rng.choice("0123456789") for _ in range(rng.randint(19, 29)))
+            for text in (run, f"id {run} ok", f"GB{run}"):
+                with self.subTest(text=text):
+                    self.assertEqual(card.spans(text), [])
+                    if not text.startswith("GB"):
+                        self.assertEqual(iban.spans(text), [])
 
 
 class Validators(unittest.TestCase):
