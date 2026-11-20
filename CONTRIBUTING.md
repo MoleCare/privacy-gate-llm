@@ -46,7 +46,7 @@ weak result, it is a meaningless one.
 There is nothing to install:
 
 ```bash
-git clone https://github.com/MoleCare/privacy-gate-llm.git
+git clone https://github.com/YauhenBichel/privacy-gate-llm.git
 cd privacy-gate-llm
 PYTHONPATH=src python3 -m unittest discover -s tests -v
 ```

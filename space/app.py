@@ -76,7 +76,7 @@ with gr.Blocks(title="privacy-gate: must this stay on this machine?") as demo:
         "A **1,024-weight head on `bge-m3`** that catches health data, credentials and personal data written as "
         "ordinary English, which pattern rules cannot see. It may only ever *add* a hold behind the rules you already "
         "have. Nothing you type here is stored.  \n"
-        f"[Code, data and journal](https://github.com/MoleCare/privacy-gate-llm) · "
+        f"[Code, data and journal](https://github.com/YauhenBichel/privacy-gate-llm) · "
         f"[model](https://huggingface.co/YauhenBichel/privacy-gate-llm) · `pip install molecare-privacy-gate` · head `{HEAD}` · "
         f"encoder on this Space's CPU, about a second per sentence."
     )

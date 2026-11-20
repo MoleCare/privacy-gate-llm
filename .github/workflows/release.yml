@@ -71,6 +71,13 @@ jobs:
       - run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --notes "See CHANGELOG.md." || gh release upload "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --clobber
         env:
           GH_TOKEN: ${{ github.token }}
+      - name: Move the major tag (v1) so `uses: YauhenBichel/privacy-gate-llm@v1` gets this release
+        run: |
+          major="${GITHUB_REF_NAME%%.*}"
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/$major" -f sha="$GITHUB_SHA" -F force=true \
+            || gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$major" -f sha="$GITHUB_SHA"
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   image:
     name: container image to ghcr.io

@@ -7,7 +7,7 @@
 [![Demo](https://img.shields.io/badge/%F0%9F%A4%97-demo-yellow.svg)](https://huggingface.co/spaces/YauhenBichel/privacy-gate-llm-demo)
 [![Dataset on HF](https://img.shields.io/badge/%F0%9F%A4%97-dataset-yellow.svg)](https://huggingface.co/datasets/YauhenBichel/privacy-gate-gold)
 [![PyPI](https://img.shields.io/pypi/v/molecare-privacy-gate.svg)](https://pypi.org/project/molecare-privacy-gate/)
-[![Contributors](https://img.shields.io/github/contributors/MoleCare/privacy-gate-llm)](https://github.com/MoleCare/privacy-gate-llm#contributors)
+[![Contributors](https://img.shields.io/github/contributors/YauhenBichel/privacy-gate-llm)](https://github.com/YauhenBichel/privacy-gate-llm#contributors)
 
 A very small model that answers one question about a piece of text:
 
@@ -97,7 +97,7 @@ privacy-gate check "the woman from Tuesday's clinic has a 7mm lesion on her shou
 # hold  score=6.7200 threshold=0.1209 margin=6.5991
 ```
 
-To install the latest `main` instead: `pip install "molecare-privacy-gate @ git+https://github.com/MoleCare/privacy-gate-llm"`.
+To install the latest `main` instead: `pip install "molecare-privacy-gate @ git+https://github.com/YauhenBichel/privacy-gate-llm"`.
 
 Three places the embedding can come from, one head:
 
@@ -126,10 +126,10 @@ gate = Gate.load(embedder=make_embedder("local"))
 `privacy-gate serve` is the loopback HTTP sidecar for other languages (below); `privacy-gate check
 --fail-on-hold` exits 3 on a hold, for CI; `privacy-gate info` prints the head's SHA-256, so what you run is
 what was measured. A container with the in-process encoder: `docker run --rm -p 127.0.0.1:8231:8231
-ghcr.io/molecare/privacy-gate` (built by the release workflow from `Dockerfile`).
+ghcr.io/yauhenbichel/privacy-gate` (built by the release workflow from `Dockerfile`).
 
 Inside tools you already run: a **LiteLLM** guardrail that sends a held request to a local model instead of
-the cloud one, an **Open WebUI** filter, and a **GitHub Action** (`uses: MoleCare/privacy-gate-llm@v1`) that
+the cloud one, an **Open WebUI** filter, and a **GitHub Action** (`uses: YauhenBichel/privacy-gate-llm@v1`) that
 fails a pull request whose added lines read like health data, credentials or personal data written as prose.
 See [`integrations/`](integrations/).
 
@@ -302,8 +302,8 @@ contribution is a **hard negative**: text that looks sensitive and is not.
 
 The list is filled by [Contributors](./.github/workflows/contributors.yml) from
 GitHub commits, bots omitted — never hand-maintained, because a stale list is
-worse than none. [Contributor graph](https://github.com/MoleCare/privacy-gate-llm/graphs/contributors) ·
-[good first issue](https://github.com/MoleCare/privacy-gate-llm/labels/good%20first%20issue)
+worse than none. [Contributor graph](https://github.com/YauhenBichel/privacy-gate-llm/graphs/contributors) ·
+[good first issue](https://github.com/YauhenBichel/privacy-gate-llm/labels/good%20first%20issue)
 
 ## Licence
 
