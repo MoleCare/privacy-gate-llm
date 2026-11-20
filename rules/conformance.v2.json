@@ -1,0 +1,1418 @@
+{
+ "schema": "privacy-gate-conformance/2",
+ "note": "Generated from rules/privacy-v2.yaml by scripts/build_rules.py. Do not edit by hand. For each case, the rule alone, run on `text` with no normalisation, must report exactly `spans` ([start, end) in Unicode code points, sorted, disjoint). `kind: pass` cases report none.",
+ "ruleset": {
+  "id": "privacy-v2",
+  "version": "2.0.0",
+  "sha256": "c7791530201c32427467133495edf2d1d4ff05d0ac6be8f720fd2678fe8d4f0f"
+ },
+ "cases": [
+  {
+   "rule": "PG-SECRET-001",
+   "category": "secret",
+   "kind": "fail",
+   "text": "auth failing with sk-ant-api03-QQ11ww22EE33rr44TT55yy66",
+   "spans": [
+    [
+     18,
+     55
+    ]
+   ],
+   "aliases": [
+    "PRIV003"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-001",
+   "category": "secret",
+   "kind": "fail",
+   "text": "the key is AKIANOTAREALKEY12345",
+   "spans": [
+    [
+     11,
+     31
+    ]
+   ],
+   "aliases": [
+    "PRIV003"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-001",
+   "category": "secret",
+   "kind": "fail",
+   "text": "AKIAIOSFODNN7EXAMPLE is the doc key, ours is AKIANOTAREALKEY12345",
+   "spans": [
+    [
+     45,
+     65
+    ]
+   ],
+   "aliases": [
+    "PRIV003"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-001",
+   "category": "secret",
+   "kind": "fail",
+   "text": "OPENAI_API_KEY is sk-proj-NOTAREALKEYNOTAREALKEY for now",
+   "spans": [
+    [
+     18,
+     48
+    ]
+   ],
+   "aliases": [
+    "PRIV003"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-001",
+   "category": "secret",
+   "kind": "fail",
+   "text": "clone with ghp_NOTAREALTOKENNOTAREALTOKEN0000 then push",
+   "spans": [
+    [
+     11,
+     45
+    ]
+   ],
+   "aliases": [
+    "PRIV003"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-001",
+   "category": "secret",
+   "kind": "fail",
+   "text": "or github_pat_NOTAREALTOKEN_NOTAREALTOKEN_0000",
+   "spans": [
+    [
+     3,
+     46
+    ]
+   ],
+   "aliases": [
+    "PRIV003"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-001",
+   "category": "secret",
+   "kind": "fail",
+   "text": "slack bot xoxb-NOT-A-REAL-TOKEN",
+   "spans": [
+    [
+     10,
+     31
+    ]
+   ],
+   "aliases": [
+    "PRIV003"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-001",
+   "category": "secret",
+   "kind": "fail",
+   "text": "HF_TOKEN hf_NOTAREALTOKENNOTAREALTOKEN0000",
+   "spans": [
+    [
+     9,
+     42
+    ]
+   ],
+   "aliases": [
+    "PRIV003"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-001",
+   "category": "secret",
+   "kind": "pass",
+   "text": "read the key from ANTHROPIC_API_KEY instead of hardcoding it",
+   "spans": [],
+   "aliases": [
+    "PRIV003"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-001",
+   "category": "secret",
+   "kind": "pass",
+   "text": "we rotate the GitHub PAT every 90 days",
+   "spans": [],
+   "aliases": [
+    "PRIV003"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-001",
+   "category": "secret",
+   "kind": "pass",
+   "text": "is AKIAIOSFODNN7EXAMPLE still valid?",
+   "spans": [],
+   "aliases": [
+    "PRIV003"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-001",
+   "category": "secret",
+   "kind": "pass",
+   "text": "AKIAIOSFODNN7EXAMPLE is AWS documentation, add it to the allowlist",
+   "spans": [],
+   "aliases": [
+    "PRIV003"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-001",
+   "category": "secret",
+   "kind": "pass",
+   "text": "run the sk-learn tutorial first",
+   "spans": [],
+   "aliases": [
+    "PRIV003"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-001",
+   "category": "secret",
+   "kind": "pass",
+   "text": "the ghp_ prefix marks a classic token",
+   "spans": [],
+   "aliases": [
+    "PRIV003"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-002",
+   "category": "secret",
+   "kind": "fail",
+   "text": "the file starts -----BEGIN RSA PRIVATE KEY-----",
+   "spans": [
+    [
+     16,
+     47
+    ]
+   ],
+   "aliases": [
+    "PRIV003"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-002",
+   "category": "secret",
+   "kind": "fail",
+   "text": "token eyJhbGciOiJub25lIn0.eyJzdWIiOiJFWEFNUExFIn0. expired",
+   "spans": [
+    [
+     6,
+     50
+    ]
+   ],
+   "aliases": [
+    "PRIV003"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-002",
+   "category": "secret",
+   "kind": "pass",
+   "text": "the file starts with a BEGIN PRIVATE KEY line",
+   "spans": [],
+   "aliases": [
+    "PRIV003"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-002",
+   "category": "secret",
+   "kind": "pass",
+   "text": "JWTs start with eyJ because of the JSON brace",
+   "spans": [],
+   "aliases": [
+    "PRIV003"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-003",
+   "category": "secret",
+   "kind": "fail",
+   "text": "DB_PASSWORD=hunter2correcthorsebattery",
+   "spans": [
+    [
+     12,
+     38
+    ]
+   ],
+   "aliases": [
+    "PRIV004"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-003",
+   "category": "secret",
+   "kind": "fail",
+   "text": "apiKey: \"fake-key-for-tests\"",
+   "spans": [
+    [
+     9,
+     27
+    ]
+   ],
+   "aliases": [
+    "PRIV004"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-003",
+   "category": "secret",
+   "kind": "fail",
+   "text": "{\"db_password\": \"hunter2correcthorsebattery\"}",
+   "spans": [
+    [
+     17,
+     43
+    ]
+   ],
+   "aliases": [
+    "PRIV004"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-003",
+   "category": "secret",
+   "kind": "fail",
+   "text": "{'apiKey': 'fake-key-for-tests'}",
+   "spans": [
+    [
+     12,
+     30
+    ]
+   ],
+   "aliases": [
+    "PRIV004"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-003",
+   "category": "secret",
+   "kind": "fail",
+   "text": "{\"client_secret\": \"not-a-real-secret-value\"}",
+   "spans": [
+    [
+     19,
+     42
+    ]
+   ],
+   "aliases": [
+    "PRIV004"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-003",
+   "category": "secret",
+   "kind": "fail",
+   "text": "apiKey: \"EXAMPLE-NOT-A-KEY\"",
+   "spans": [
+    [
+     9,
+     26
+    ]
+   ],
+   "aliases": [
+    "PRIV004"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-003",
+   "category": "secret",
+   "kind": "pass",
+   "text": "DB_PASSWORD=${DB_PASSWORD}",
+   "spans": [],
+   "aliases": [
+    "PRIV004"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-003",
+   "category": "secret",
+   "kind": "pass",
+   "text": "api_key = os.environ[\"API_KEY\"]",
+   "spans": [],
+   "aliases": [
+    "PRIV004"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-003",
+   "category": "secret",
+   "kind": "pass",
+   "text": "set password: <redacted>",
+   "spans": [],
+   "aliases": [
+    "PRIV004"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-003",
+   "category": "secret",
+   "kind": "pass",
+   "text": "{\"password\": \"${DB_PASSWORD}\"}",
+   "spans": [],
+   "aliases": [
+    "PRIV004"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-003",
+   "category": "secret",
+   "kind": "pass",
+   "text": "{\"api_key\": \"\"}",
+   "spans": [],
+   "aliases": [
+    "PRIV004"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-003",
+   "category": "secret",
+   "kind": "pass",
+   "text": "password_reset_ttl = 3600",
+   "spans": [],
+   "aliases": [
+    "PRIV004"
+   ]
+  },
+  {
+   "rule": "PG-SECRET-004",
+   "category": "secret",
+   "kind": "fail",
+   "text": "Authorization: Bearer NOT-A-REAL-TOKEN-EXAMPLE-ONLY",
+   "spans": [
+    [
+     22,
+     51
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-SECRET-004",
+   "category": "secret",
+   "kind": "pass",
+   "text": "send a Bearer token in the Authorization header",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-SECRET-004",
+   "category": "secret",
+   "kind": "pass",
+   "text": "Authorization: Bearer ${TOKEN}",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-SECRET-005",
+   "category": "secret",
+   "kind": "fail",
+   "text": "DATABASE_URL=postgres://app:not-a-real-password@db.internal:5432/app",
+   "spans": [
+    [
+     28,
+     47
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-SECRET-005",
+   "category": "secret",
+   "kind": "pass",
+   "text": "postgres://app@db.internal/app",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-SECRET-005",
+   "category": "secret",
+   "kind": "pass",
+   "text": "postgres://app:${DB_PASSWORD}@db.internal/app",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-SECRET-005",
+   "category": "secret",
+   "kind": "pass",
+   "text": "postgres://user:password@localhost/dev",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-SECRET-005",
+   "category": "secret",
+   "kind": "pass",
+   "text": "https://example.com:8443/path",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-CARD-001",
+   "category": "card",
+   "kind": "fail",
+   "text": "charge 4000 1234 5678 9017 again",
+   "spans": [
+    [
+     7,
+     26
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-CARD-001",
+   "category": "card",
+   "kind": "fail",
+   "text": "card=4000123456789017",
+   "spans": [
+    [
+     5,
+     21
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-CARD-001",
+   "category": "card",
+   "kind": "pass",
+   "text": "4111 1111 1111 1111 is the test Visa",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-CARD-001",
+   "category": "card",
+   "kind": "pass",
+   "text": "use 4242424242424242 in test mode",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-CARD-001",
+   "category": "card",
+   "kind": "pass",
+   "text": "order 4000123456789010 shipped",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-CARD-001",
+   "category": "card",
+   "kind": "pass",
+   "text": "timestamp 1732096800000",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-PATIENT-001",
+   "category": "patient_or_national_id",
+   "kind": "fail",
+   "text": "Patient ID: 40219 came back for a review",
+   "spans": [
+    [
+     12,
+     17
+    ]
+   ],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-001",
+   "category": "patient_or_national_id",
+   "kind": "fail",
+   "text": "Patient Jane Smith, MRN: 445621, admitted with chest pain",
+   "spans": [
+    [
+     25,
+     31
+    ]
+   ],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-001",
+   "category": "patient_or_national_id",
+   "kind": "fail",
+   "text": "MRN 98765, Patient John Doe",
+   "spans": [
+    [
+     4,
+     9
+    ]
+   ],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-001",
+   "category": "patient_or_national_id",
+   "kind": "fail",
+   "text": "{\"patient_id\": 40219, \"mrn\": \"98765\", \"dob\": \"1979-04-02\"}",
+   "spans": [
+    [
+     15,
+     20
+    ],
+    [
+     30,
+     35
+    ]
+   ],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-001",
+   "category": "patient_or_national_id",
+   "kind": "fail",
+   "text": "patient_id: 40219, dateOfBirth: 1979-04-02",
+   "spans": [
+    [
+     12,
+     17
+    ]
+   ],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-001",
+   "category": "patient_or_national_id",
+   "kind": "pass",
+   "text": "add a patientId column to the moles table",
+   "spans": [],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-001",
+   "category": "patient_or_national_id",
+   "kind": "pass",
+   "text": "the Patient entity needs a nullable dateOfBirth field",
+   "spans": [],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-001",
+   "category": "patient_or_national_id",
+   "kind": "pass",
+   "text": "add an mrn column to the patients table",
+   "spans": [],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-001",
+   "category": "patient_or_national_id",
+   "kind": "pass",
+   "text": "MRN lookups are slow on the replica",
+   "spans": [],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-001",
+   "category": "patient_or_national_id",
+   "kind": "pass",
+   "text": "the NHS app login flow has a bug",
+   "spans": [],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-001",
+   "category": "patient_or_national_id",
+   "kind": "pass",
+   "text": "rename birthDate to dateOfBirth in the Patient type",
+   "spans": [],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-002",
+   "category": "patient_or_national_id",
+   "kind": "fail",
+   "text": "DOB: 1979-04-02, presented with a changing lesion",
+   "spans": [
+    [
+     5,
+     15
+    ]
+   ],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-002",
+   "category": "patient_or_national_id",
+   "kind": "fail",
+   "text": "John Doe, DOB 1985-03-20, on Metformin",
+   "spans": [
+    [
+     14,
+     24
+    ]
+   ],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-002",
+   "category": "patient_or_national_id",
+   "kind": "fail",
+   "text": "date of birth 12/05/1960",
+   "spans": [
+    [
+     14,
+     24
+    ]
+   ],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-002",
+   "category": "patient_or_national_id",
+   "kind": "fail",
+   "text": "birth_date = 1960-05-12",
+   "spans": [
+    [
+     13,
+     23
+    ]
+   ],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-002",
+   "category": "patient_or_national_id",
+   "kind": "fail",
+   "text": "patient_id: 40219, dateOfBirth: 1979-04-02",
+   "spans": [
+    [
+     32,
+     42
+    ]
+   ],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-002",
+   "category": "patient_or_national_id",
+   "kind": "fail",
+   "text": "{\"patient_id\": 40219, \"mrn\": \"98765\", \"dob\": \"1979-04-02\"}",
+   "spans": [
+    [
+     46,
+     56
+    ]
+   ],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-002",
+   "category": "patient_or_national_id",
+   "kind": "pass",
+   "text": "the dob field is a Date, not a string",
+   "spans": [],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-002",
+   "category": "patient_or_national_id",
+   "kind": "pass",
+   "text": "rename birthDate to dateOfBirth in the Patient type",
+   "spans": [],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-PATIENT-002",
+   "category": "patient_or_national_id",
+   "kind": "pass",
+   "text": "the Patient entity needs a nullable dateOfBirth field",
+   "spans": [],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-NATID-001",
+   "category": "patient_or_national_id",
+   "kind": "fail",
+   "text": "NHS number: 943 476 5919",
+   "spans": [
+    [
+     12,
+     24
+    ]
+   ],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-NATID-001",
+   "category": "patient_or_national_id",
+   "kind": "fail",
+   "text": "NHS 943 476 5919 was referred",
+   "spans": [
+    [
+     4,
+     16
+    ]
+   ],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-NATID-001",
+   "category": "patient_or_national_id",
+   "kind": "fail",
+   "text": "\"nhs_number\": \"9434765919\"",
+   "spans": [
+    [
+     15,
+     25
+    ]
+   ],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-NATID-001",
+   "category": "patient_or_national_id",
+   "kind": "pass",
+   "text": "the NHS app login flow has a bug",
+   "spans": [],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-NATID-001",
+   "category": "patient_or_national_id",
+   "kind": "pass",
+   "text": "NHS number: 123 456 7890",
+   "spans": [],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-NATID-001",
+   "category": "patient_or_national_id",
+   "kind": "pass",
+   "text": "NHS 111 is the urgent line",
+   "spans": [],
+   "aliases": [
+    "PRIV002"
+   ]
+  },
+  {
+   "rule": "PG-NATID-002",
+   "category": "patient_or_national_id",
+   "kind": "fail",
+   "text": "SSN 123-45-6789 on the form",
+   "spans": [
+    [
+     4,
+     15
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-NATID-002",
+   "category": "patient_or_national_id",
+   "kind": "pass",
+   "text": "SSN 666-12-3456 is never issued",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-NATID-002",
+   "category": "patient_or_national_id",
+   "kind": "pass",
+   "text": "987-65-4321 is in the advertising range",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-NATID-002",
+   "category": "patient_or_national_id",
+   "kind": "pass",
+   "text": "part 123-00-4567 and 000-12-3456",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IMAGE-001",
+   "category": "image_document",
+   "kind": "fail",
+   "text": "here is the mole photo data:image/jpeg;base64,/9j/4AAQSkZJRg",
+   "spans": [
+    [
+     23,
+     60
+    ]
+   ],
+   "aliases": [
+    "PRIV001"
+   ]
+  },
+  {
+   "rule": "PG-IMAGE-001",
+   "category": "image_document",
+   "kind": "fail",
+   "text": "the scan data:application/pdf;base64,JVBERi0xLjQK",
+   "spans": [
+    [
+     9,
+     49
+    ]
+   ],
+   "aliases": [
+    "PRIV001"
+   ]
+  },
+  {
+   "rule": "PG-IMAGE-001",
+   "category": "image_document",
+   "kind": "fail",
+   "text": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkiVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkiVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkiVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkiVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkiVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkiVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkiVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkiVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkiVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkiVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk",
+   "spans": [
+    [
+     0,
+     660
+    ]
+   ],
+   "aliases": [
+    "PRIV001"
+   ]
+  },
+  {
+   "rule": "PG-IMAGE-001",
+   "category": "image_document",
+   "kind": "pass",
+   "text": "how do I render a data URI in React Native?",
+   "spans": [],
+   "aliases": [
+    "PRIV001"
+   ]
+  },
+  {
+   "rule": "PG-IMAGE-001",
+   "category": "image_document",
+   "kind": "pass",
+   "text": "const hash = \"YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXo=\"",
+   "spans": [],
+   "aliases": [
+    "PRIV001"
+   ]
+  },
+  {
+   "rule": "PG-IMAGE-001",
+   "category": "image_document",
+   "kind": "pass",
+   "text": "the minified bundle is one long line of code but it is not a payload</script>",
+   "spans": [],
+   "aliases": [
+    "PRIV001"
+   ]
+  },
+  {
+   "rule": "PG-EMAIL-001",
+   "category": "email",
+   "kind": "fail",
+   "text": "the account for ana.duarte@northgate.internal cannot log in",
+   "spans": [
+    [
+     16,
+     45
+    ]
+   ],
+   "aliases": [
+    "PRIV005"
+   ]
+  },
+  {
+   "rule": "PG-EMAIL-001",
+   "category": "email",
+   "kind": "fail",
+   "text": "cc j.doe+billing@northgate.internal and test@example.com",
+   "spans": [
+    [
+     3,
+     35
+    ]
+   ],
+   "aliases": [
+    "PRIV005"
+   ]
+  },
+  {
+   "rule": "PG-EMAIL-001",
+   "category": "email",
+   "kind": "pass",
+   "text": "validate the email field with a regex",
+   "spans": [],
+   "aliases": [
+    "PRIV005"
+   ]
+  },
+  {
+   "rule": "PG-EMAIL-001",
+   "category": "email",
+   "kind": "pass",
+   "text": "send it to the support address in the config",
+   "spans": [],
+   "aliases": [
+    "PRIV005"
+   ]
+  },
+  {
+   "rule": "PG-EMAIL-001",
+   "category": "email",
+   "kind": "pass",
+   "text": "expect(res.body.email).toBe('test@example.com')",
+   "spans": [],
+   "aliases": [
+    "PRIV005"
+   ]
+  },
+  {
+   "rule": "PG-EMAIL-001",
+   "category": "email",
+   "kind": "pass",
+   "text": "the OpenAPI sample uses jane@example.org",
+   "spans": [],
+   "aliases": [
+    "PRIV005"
+   ]
+  },
+  {
+   "rule": "PG-EMAIL-001",
+   "category": "email",
+   "kind": "pass",
+   "text": "the seed script writes admin@localhost",
+   "spans": [],
+   "aliases": [
+    "PRIV005"
+   ]
+  },
+  {
+   "rule": "PG-EMAIL-001",
+   "category": "email",
+   "kind": "pass",
+   "text": "end the message with Co-Authored-By: Claude <noreply@anthropic.com>",
+   "spans": [],
+   "aliases": [
+    "PRIV005"
+   ]
+  },
+  {
+   "rule": "PG-EMAIL-001",
+   "category": "email",
+   "kind": "pass",
+   "text": "the map is rebuilt by make-maps.sh\\n@repo-map.md",
+   "spans": [],
+   "aliases": [
+    "PRIV005"
+   ]
+  },
+  {
+   "rule": "PG-EMAIL-001",
+   "category": "email",
+   "kind": "pass",
+   "text": "reply to m-7qk2fa@masked.invalid",
+   "spans": [],
+   "aliases": [
+    "PRIV005"
+   ]
+  },
+  {
+   "rule": "PG-PHONE-001",
+   "category": "phone",
+   "kind": "fail",
+   "text": "call me on 07700 900123",
+   "spans": [
+    [
+     11,
+     23
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-PHONE-001",
+   "category": "phone",
+   "kind": "fail",
+   "text": "mobile +44 7700 900123, office hours only",
+   "spans": [
+    [
+     7,
+     22
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-PHONE-001",
+   "category": "phone",
+   "kind": "fail",
+   "text": "US office (202) 555-0123",
+   "spans": [
+    [
+     10,
+     24
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-PHONE-001",
+   "category": "phone",
+   "kind": "fail",
+   "text": "fax 202-555-0187",
+   "spans": [
+    [
+     4,
+     16
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-PHONE-001",
+   "category": "phone",
+   "kind": "fail",
+   "text": "from abroad 0044 7700 900123",
+   "spans": [
+    [
+     12,
+     28
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-PHONE-001",
+   "category": "phone",
+   "kind": "pass",
+   "text": "version 10.0.19045.2965",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-PHONE-001",
+   "category": "phone",
+   "kind": "pass",
+   "text": "the build took 0.25 seconds",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-PHONE-001",
+   "category": "phone",
+   "kind": "pass",
+   "text": "call 999 or 112",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-PHONE-001",
+   "category": "phone",
+   "kind": "pass",
+   "text": "ISBN 978-0-306-40615-7",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-PHONE-001",
+   "category": "phone",
+   "kind": "pass",
+   "text": "pid 000 000 0000",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IBAN-001",
+   "category": "iban",
+   "kind": "fail",
+   "text": "pay GB82 WEST 1234 5698 7654 32 by Friday",
+   "spans": [
+    [
+     4,
+     31
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IBAN-001",
+   "category": "iban",
+   "kind": "fail",
+   "text": "IBAN: DE89370400440532013000.",
+   "spans": [
+    [
+     6,
+     28
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IBAN-001",
+   "category": "iban",
+   "kind": "pass",
+   "text": "IBAN: GB82 WEST 1234 5698 7654 33",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IBAN-001",
+   "category": "iban",
+   "kind": "pass",
+   "text": "the IBAN field is optional",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IP-001",
+   "category": "private_ip",
+   "kind": "fail",
+   "text": "ssh to 192.168.1.20 first",
+   "spans": [
+    [
+     7,
+     19
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IP-001",
+   "category": "private_ip",
+   "kind": "fail",
+   "text": "the pod is on 10.42.0.7",
+   "spans": [
+    [
+     14,
+     23
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IP-001",
+   "category": "private_ip",
+   "kind": "fail",
+   "text": "tailnet peer 100.101.102.103",
+   "spans": [
+    [
+     13,
+     28
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IP-001",
+   "category": "private_ip",
+   "kind": "pass",
+   "text": "docs use 192.0.2.10",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IP-001",
+   "category": "private_ip",
+   "kind": "pass",
+   "text": "allow 10.0.0.0/8 in the firewall",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IP-001",
+   "category": "private_ip",
+   "kind": "pass",
+   "text": "version 1.2.3.4",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IP-001",
+   "category": "private_ip",
+   "kind": "pass",
+   "text": "localhost is 127.0.0.1",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IP-001",
+   "category": "private_ip",
+   "kind": "pass",
+   "text": "8.8.8.8 is public",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IP-002",
+   "category": "private_ip",
+   "kind": "fail",
+   "text": "ULA fd12:3456:789a::1 on the bridge",
+   "spans": [
+    [
+     4,
+     21
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IP-002",
+   "category": "private_ip",
+   "kind": "fail",
+   "text": "link fe80::1%en0",
+   "spans": [
+    [
+     5,
+     12
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IP-002",
+   "category": "private_ip",
+   "kind": "pass",
+   "text": "docs use 2001:db8::1",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-IP-002",
+   "category": "private_ip",
+   "kind": "pass",
+   "text": "the colour is #fdfdfd",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-PATH-001",
+   "category": "home_path",
+   "kind": "fail",
+   "text": "open /Users/ana.duarte/DevBox/app",
+   "spans": [
+    [
+     12,
+     22
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-PATH-001",
+   "category": "home_path",
+   "kind": "fail",
+   "text": "logs in /home/jdoe/.cache",
+   "spans": [
+    [
+     14,
+     18
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-PATH-001",
+   "category": "home_path",
+   "kind": "fail",
+   "text": "C:\\Users\\ana\\AppData",
+   "spans": [
+    [
+     9,
+     12
+    ]
+   ],
+   "aliases": []
+  },
+  {
+   "rule": "PG-PATH-001",
+   "category": "home_path",
+   "kind": "pass",
+   "text": "/Users/Shared/Previously Relocated Items",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-PATH-001",
+   "category": "home_path",
+   "kind": "pass",
+   "text": "replace /home/user with your own path",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-PATH-001",
+   "category": "home_path",
+   "kind": "pass",
+   "text": "cd ~/projects",
+   "spans": [],
+   "aliases": []
+  },
+  {
+   "rule": "PG-PATH-001",
+   "category": "home_path",
+   "kind": "pass",
+   "text": "/home/runner/work on CI",
+   "spans": [],
+   "aliases": []
+  }
+ ]
+}

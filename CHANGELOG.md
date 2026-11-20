@@ -2,6 +2,19 @@
 
 All notable changes. The head file has its own history in `docs/JOURNAL.md`; a new head is a new minor version.
 
+## Unreleased
+
+Guard, phase P0 (design `docs/design/DESIGN-2026-11-20-privacy-guard.md`):
+
+- `rules/privacy-v2.yaml`, schema `privacy-gate-rules/2`: 12 categories, 17 rules with validators, the lite,
+  standard and full profiles, and fixtures for every rule. Seeded from llm-harness ruleset v1 at its pull
+  request 32; the old ids PRIV001-005 are kept as `aliases`.
+- `scripts/build_rules.py` compiles it to `src/privacy_gate/guard/privacy-v2.json` (loaded by the engine,
+  standard library only) and writes `rules/conformance.v2.json` (123 cases) for every engine.
+- `privacy_gate.guard`: the rules loader and the L1 matcher, with an RE2-portability check.
+- `privacy-gate info` also reports the ruleset id, version, SHA-256 and rule count.
+- ADR 0002 and a threat-model section in `SECURITY.md`.
+
 ## 1.0.1 — 2026-11-20
 
 The repository moved from `MoleCare/privacy-gate-llm` to

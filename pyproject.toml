@@ -57,4 +57,4 @@ packages = ["src/privacy_gate"]
 "model/head-v1.json" = "privacy_gate/models/head-v1.json"
 
 [tool.hatch.build.targets.sdist]
-include = ["src/privacy_gate", "model/head-v1.json", "README.md", "LICENSE", "NOTICE", "CHANGELOG.md", "pyproject.toml"]
+include = ["src/privacy_gate", "model/head-v1.json", "rules/privacy-v2.yaml", "rules/conformance.v2.json", "README.md", "LICENSE", "NOTICE", "CHANGELOG.md", "pyproject.toml"]

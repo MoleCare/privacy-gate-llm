@@ -227,6 +227,9 @@ class TestCli(unittest.TestCase):
         info = json.loads(out)
         self.assertEqual(len(info["head_sha256"]), 64)
         self.assertEqual(info["dimensions"], DIMS)
+        self.assertEqual(info["ruleset"]["id"], "privacy-v2")
+        self.assertEqual(len(info["ruleset"]["sha256"]), 64)
+        self.assertEqual(info["ruleset"]["rules"], 17)
 
     def test_no_text_is_a_usage_error(self) -> None:
         code, _out, err = self.run_cli(["check"], stdin="")

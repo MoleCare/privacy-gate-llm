@@ -1,0 +1,426 @@
+{
+  "schema": "privacy-gate-rules/2",
+  "id": "privacy-v2",
+  "version": "2.0.0",
+  "updated": "2026-11-20",
+  "seeded_from": {
+    "repo": "llm-harness",
+    "pr": 32,
+    "commit": "25dabd64d5a4c711dd46db55673f24653ef0f5a0",
+    "ruleset_v1_sha256": "8347d9d1abe53d88d2998a0bb8fda25491d4308419dbeefaf1280253a33edc65",
+    "note": "Head of llm-harness pull request 32 (keys with values, numbers, binary blocks), still open when seeded."
+  },
+  "categories": {
+    "secret": {
+      "title": "Credential, key or token",
+      "action": "block",
+      "overridable": false,
+      "surrogate": "none",
+      "layers": [
+        "L0",
+        "L1"
+      ]
+    },
+    "card": {
+      "title": "Payment card number",
+      "action": "block",
+      "overridable": false,
+      "surrogate": "none",
+      "layers": [
+        "L1"
+      ]
+    },
+    "patient_or_national_id": {
+      "title": "Patient record or national identifier",
+      "action": "block",
+      "overridable": false,
+      "surrogate": "none",
+      "layers": [
+        "L1",
+        "L2"
+      ]
+    },
+    "health_prose": {
+      "title": "Health information written as prose",
+      "action": "block",
+      "overridable": false,
+      "surrogate": "none",
+      "layers": [
+        "L3"
+      ]
+    },
+    "image_document": {
+      "title": "Inline image or document",
+      "action": "block",
+      "overridable": false,
+      "surrogate": "none",
+      "layers": [
+        "L0",
+        "L1"
+      ]
+    },
+    "email": {
+      "title": "E-mail address",
+      "action": "mask",
+      "overridable": true,
+      "surrogate": "email",
+      "layers": [
+        "L1"
+      ]
+    },
+    "phone": {
+      "title": "Telephone number",
+      "action": "mask",
+      "overridable": true,
+      "surrogate": "phone",
+      "layers": [
+        "L1"
+      ]
+    },
+    "person_name": {
+      "title": "Person's name",
+      "action": "mask",
+      "overridable": true,
+      "surrogate": "tag",
+      "label": "PERSON",
+      "layers": [
+        "L2"
+      ]
+    },
+    "postal_address": {
+      "title": "Postal address",
+      "action": "mask",
+      "overridable": true,
+      "surrogate": "tag",
+      "label": "ADDRESS",
+      "layers": [
+        "L2"
+      ]
+    },
+    "iban": {
+      "title": "Bank account (IBAN)",
+      "action": "mask",
+      "overridable": true,
+      "surrogate": "tag",
+      "label": "IBAN",
+      "layers": [
+        "L1"
+      ]
+    },
+    "private_ip": {
+      "title": "Private network address",
+      "action": "mask",
+      "overridable": true,
+      "surrogate": "private_ip",
+      "layers": [
+        "L1"
+      ]
+    },
+    "home_path": {
+      "title": "User name in a home directory path",
+      "action": "mask",
+      "overridable": true,
+      "surrogate": "home_path",
+      "layers": [
+        "L1"
+      ]
+    }
+  },
+  "profiles": {
+    "lite": {
+      "layers": [
+        "L0",
+        "L1"
+      ],
+      "combination": "shadow",
+      "note": "default for pip install and the TypeScript engine; structured data only"
+    },
+    "standard": {
+      "layers": [
+        "L0",
+        "L1",
+        "L2"
+      ],
+      "combination": "block",
+      "note": "default for the proxy image; names and addresses become maskable"
+    },
+    "full": {
+      "layers": [
+        "L0",
+        "L1",
+        "L2",
+        "L3"
+      ],
+      "combination": "block",
+      "note": "health and clinical prose too"
+    }
+  },
+  "combination": {
+    "rule_id": "PG-COMBO-001",
+    "min_distinct": 4
+  },
+  "rules": [
+    {
+      "id": "PG-SECRET-001",
+      "aliases": [
+        "PRIV003"
+      ],
+      "title": "Provider API key or access token",
+      "category": "secret",
+      "patterns": [
+        "sk-ant-[A-Za-z0-9_-]{16,}",
+        "\\bsk-(?:proj-|svcacct-|admin-)?[A-Za-z0-9_-]{20,}",
+        "\\bgh[pousr]_[A-Za-z0-9]{30,}",
+        "\\bgithub_pat_[A-Za-z0-9_]{30,}",
+        "\\bAKIA[0-9A-Z]{16}\\b",
+        "\\bxox[abposr]-[A-Za-z0-9-]{10,}",
+        "\\bhf_[A-Za-z0-9]{30,}"
+      ],
+      "except": [
+        "AKIAIOSFODNN7EXAMPLE"
+      ]
+    },
+    {
+      "id": "PG-SECRET-002",
+      "aliases": [
+        "PRIV003"
+      ],
+      "title": "Private key block or JSON Web Token",
+      "category": "secret",
+      "patterns": [
+        "-----BEGIN [A-Z ]*PRIVATE KEY-----",
+        "\\beyJ[A-Za-z0-9_-]{10,}\\.eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]*"
+      ]
+    },
+    {
+      "id": "PG-SECRET-003",
+      "aliases": [
+        "PRIV004"
+      ],
+      "title": "Secret assigned in pasted config",
+      "category": "secret",
+      "patterns": [
+        {
+          "regex": "(?i)\\b[a-z0-9_]*(?:password|passwd|secret|api_?key|access_?token|auth_?token|private_?key)[a-z0-9_]*[\"']?\\s*[:=]\\s*[\"']?([A-Za-z0-9/+_-]{12,})",
+          "group": 1
+        }
+      ]
+    },
+    {
+      "id": "PG-SECRET-004",
+      "title": "Bearer token",
+      "category": "secret",
+      "patterns": [
+        {
+          "regex": "(?i)\\bbearer\\s+([A-Za-z0-9._~+/-]{20,}=*)",
+          "group": 1
+        }
+      ]
+    },
+    {
+      "id": "PG-SECRET-005",
+      "title": "Password inside a URL",
+      "category": "secret",
+      "patterns": [
+        {
+          "regex": "\\b[A-Za-z][A-Za-z0-9+.-]{1,20}://[^\\s:/@]{1,64}:([^\\s/@]{1,128})@",
+          "group": 1
+        }
+      ],
+      "except": [
+        "\\$\\{?[A-Za-z_][A-Za-z0-9_]*\\}?",
+        "<[^>]*>",
+        "\\*+",
+        "[xX]+"
+      ],
+      "except_values": [
+        "password",
+        "pass",
+        "secret",
+        "changeme",
+        "pw",
+        "PASSWORD"
+      ]
+    },
+    {
+      "id": "PG-CARD-001",
+      "title": "Payment card number",
+      "category": "card",
+      "patterns": [
+        "\\b[2-6](?:\\d[ -]?){11,17}\\d\\b"
+      ],
+      "validator": "luhn",
+      "except_values": [
+        "4111111111111111",
+        "4242424242424242",
+        "4012888888881881",
+        "4222222222222",
+        "5555555555554444",
+        "5105105105105100",
+        "2223003122003222",
+        "378282246310005",
+        "371449635398431",
+        "6011111111111117",
+        "6011000990139424",
+        "3530111333300000",
+        "30569309025904",
+        "38520000023237"
+      ]
+    },
+    {
+      "id": "PG-PATIENT-001",
+      "aliases": [
+        "PRIV002"
+      ],
+      "title": "Labelled patient or medical record number",
+      "category": "patient_or_national_id",
+      "patterns": [
+        {
+          "regex": "(?i)\\b(?:mrn|patient[\\s_-]*(?:id|no|number|#)|medical[\\s_-]*record[\\s_-]*(?:id|no|number|#)?)[\"']?\\W{0,5}([A-Za-z]{0,3}\\d{4,})",
+          "group": 1
+        }
+      ]
+    },
+    {
+      "id": "PG-PATIENT-002",
+      "aliases": [
+        "PRIV002"
+      ],
+      "title": "Labelled date of birth",
+      "category": "patient_or_national_id",
+      "patterns": [
+        {
+          "regex": "(?i)\\b(?:date[\\s_-]*of[\\s_-]*birth|birth[\\s_-]*date|dob)[\"']?\\W{0,5}(\\d{1,4}[-/.]\\d{1,2}[-/.]\\d{1,4})",
+          "group": 1
+        }
+      ]
+    },
+    {
+      "id": "PG-NATID-001",
+      "aliases": [
+        "PRIV002"
+      ],
+      "title": "NHS number (labelled, mod 11)",
+      "category": "patient_or_national_id",
+      "patterns": [
+        {
+          "regex": "(?i)\\bnhs[\\s_-]*(?:no|number|id|#)?[\"']?\\W{0,5}(\\d{3}[ -]?\\d{3}[ -]?\\d{4})\\b",
+          "group": 1
+        }
+      ],
+      "validator": "nhs_mod11"
+    },
+    {
+      "id": "PG-NATID-002",
+      "title": "US Social Security number (area rules)",
+      "category": "patient_or_national_id",
+      "patterns": [
+        "\\b\\d{3}-\\d{2}-\\d{4}\\b"
+      ],
+      "validator": "us_ssn_area"
+    },
+    {
+      "id": "PG-IMAGE-001",
+      "aliases": [
+        "PRIV001"
+      ],
+      "title": "Inline image or document payload",
+      "category": "image_document",
+      "patterns": [
+        "data:(?:image/[a-zA-Z0-9.+-]+|application/pdf);base64,[A-Za-z0-9+/=]*",
+        "[A-Za-z0-9+/]{512,}={0,2}"
+      ]
+    },
+    {
+      "id": "PG-EMAIL-001",
+      "aliases": [
+        "PRIV005"
+      ],
+      "title": "E-mail address",
+      "category": "email",
+      "patterns": [
+        "\\b[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\\.[A-Za-z]{2,}\\b"
+      ],
+      "except": [
+        "(?i)[A-Za-z0-9._%+-]{1,64}@(?:[A-Za-z0-9-]{1,63}\\.)*example\\.(?:com|org|net)",
+        "(?i)[A-Za-z0-9._%+-]{1,64}@(?:[A-Za-z0-9-]{1,63}\\.)*(?:test|invalid|localhost|example)",
+        "(?i)noreply@anthropic\\.com",
+        "(?i)[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9_-]{1,63}\\.md"
+      ]
+    },
+    {
+      "id": "PG-PHONE-001",
+      "title": "Telephone number",
+      "category": "phone",
+      "patterns": [
+        "(?:\\+|\\b00)[1-9][0-9 .()-]{6,20}\\d",
+        "\\b0\\d{2,4}[ -]?\\d{3,4}[ -]?\\d{3,4}\\b",
+        "(?:\\([2-9]\\d{2}\\) ?|\\b[2-9]\\d{2}[ .-])\\d{3}[ .-]\\d{4}\\b"
+      ],
+      "validator": "phone_digits"
+    },
+    {
+      "id": "PG-IBAN-001",
+      "title": "IBAN (country length and mod 97)",
+      "category": "iban",
+      "patterns": [
+        "\\b[A-Z]{2}\\d{2}(?: ?[A-Z0-9]){11,30}\\b"
+      ],
+      "validator": "iban_mod97"
+    },
+    {
+      "id": "PG-IP-001",
+      "title": "Private IPv4 address",
+      "category": "private_ip",
+      "patterns": [
+        "\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b"
+      ],
+      "validator": "private_ipv4"
+    },
+    {
+      "id": "PG-IP-002",
+      "title": "Private IPv6 address",
+      "category": "private_ip",
+      "patterns": [
+        "(?i)\\b(?:f[cd][0-9a-f]{2}|fe[89ab][0-9a-f]):[0-9a-f:]*[0-9a-f]"
+      ],
+      "validator": "private_ipv6"
+    },
+    {
+      "id": "PG-PATH-001",
+      "title": "User name in a home directory path",
+      "category": "home_path",
+      "patterns": [
+        {
+          "regex": "/Users/([A-Za-z0-9._-]+)",
+          "group": 1
+        },
+        {
+          "regex": "/home/([A-Za-z0-9._-]+)",
+          "group": 1
+        },
+        {
+          "regex": "\\b[A-Za-z]:\\\\Users\\\\([A-Za-z0-9._-]+)",
+          "group": 1
+        }
+      ],
+      "except_values": [
+        "Shared",
+        "Public",
+        "Default",
+        "Guest",
+        "user",
+        "username",
+        "USERNAME",
+        "you",
+        "me",
+        "name",
+        "yourname",
+        "runner",
+        "ubuntu"
+      ]
+    }
+  ],
+  "note": "Generated from rules/privacy-v2.yaml by scripts/build_rules.py. Do not edit by hand. Rationale and fixtures live in the source; fixtures are in rules/conformance.v2.json.",
+  "source_sha256": "2c3e8f34dc2a2b2c45e4b00918a12f0105ebb89cbb42235149a4c7dd7f150d45"
+}
