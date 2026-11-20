@@ -61,7 +61,19 @@ jobs:
           mapfile -t ignores < "$RUNNER_TEMP/ignores"
           python -c "import tomllib; print('\n'.join(tomllib.load(open('pyproject.toml','rb'))['dependency-groups']['dev']))" > "$RUNNER_TEMP/dev.txt"
           pip-audit --progress-spinner off --strict -r "$RUNNER_TEMP/dev.txt" "${ignores[@]}"
+      # The Space resolves torch from the CPU index as 2.x.y+cpu, a local version pip-audit cannot look up on PyPI,
+      # so its torch is audited by name in the image step above, and this step makes sure the two pins agree.
+      - name: Space and image pin the same torch
+        run: |
+          image="$(grep -E '^torch==' docker/requirements.txt)"
+          space="$(grep -E '^torch==' space/requirements.txt)"
+          if [ -z "$image" ] || [ "$image" != "$space" ]; then
+            echo "::error file=space/requirements.txt::torch pin '$space' differs from docker/requirements.txt '$image'"
+            exit 1
+          fi
+          echo "both pin $image"
       # The Space installs this repository from git (audited above as the image) and gradio from `sdk_version`.
+      # Not --strict: torch is skipped here (see above); every other package is audited.
       - name: "Audit the Space (space/requirements.txt and its gradio)"
         run: |
           mapfile -t ignores < "$RUNNER_TEMP/ignores"
@@ -69,7 +81,7 @@ jobs:
           [ -n "$gradio" ] || { echo "::error::no sdk_version in space/README.md"; exit 1; }
           { grep -v -E '^[[:space:]]*(#|$|--|privacy-gate @)' space/requirements.txt; echo "gradio==$gradio"; } > "$RUNNER_TEMP/space.txt"
           cat "$RUNNER_TEMP/space.txt"
-          pip-audit --progress-spinner off --strict -r "$RUNNER_TEMP/space.txt" \
+          pip-audit --progress-spinner off -r "$RUNNER_TEMP/space.txt" \
             --extra-index-url https://download.pytorch.org/whl/cpu "${ignores[@]}"
 
   image:

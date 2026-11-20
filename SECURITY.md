@@ -27,7 +27,8 @@ checked on every pull request (`.github/workflows/supply-chain.yml` and
 - **Pins.** Every GitHub Action is pinned by commit SHA, the Docker base image by
   digest, and the image's Python packages by exact version in
   `docker/requirements.txt` (torch from the CPU-only wheel index). Dependabot
-  proposes updates for all of them weekly.
+  proposes updates for all of them weekly, except torch: bump it by hand in
+  `docker/` and `space/` together (CI checks the two pins agree).
 - **pip-audit** fails the build on a known vulnerability in the image pins, the
   `dev` group or the Space's requirements. It also runs weekly.
 - **The image** is built and smoke-tested on every pull request (non-root, CPU-only

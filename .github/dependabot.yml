@@ -27,6 +27,12 @@ updates:
     schedule:
       interval: "weekly"
     labels: ["dependencies", "python"]
+    # torch comes from the CPU wheel index as 2.x.y+cpu. Dependabot reads that local version as an upgrade of
+    # 2.x.y (it opened "bump torch from 2.15.0 to 2.15.0+cpu") and cannot resolve it in docker/. Bump torch by hand
+    # in docker/requirements.in and .txt and space/requirements.txt together; the pip-audit job checks that the
+    # two pins agree and still reports torch advisories weekly.
+    ignore:
+      - dependency-name: "torch"
     groups:
       python-minor-and-patch:
         update-types: ["minor", "patch"]
