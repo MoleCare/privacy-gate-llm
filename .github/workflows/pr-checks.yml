@@ -174,3 +174,45 @@ jobs:
           /tmp/clean/bin/privacy-gate info
           /tmp/clean/bin/privacy-gate info | python -c "import json,sys,hashlib; i=json.load(sys.stdin); h=hashlib.sha256(open('model/head-v1.json','rb').read()).hexdigest(); assert i['head_sha256']==h, (i['head_sha256'], h); print('bundled head matches model/head-v1.json', h[:16])"
           /tmp/clean/bin/privacy-gate info | python -c "import json,sys,hashlib; i=json.load(sys.stdin); h=hashlib.sha256(open('src/privacy_gate/guard/privacy-v2.json','rb').read()).hexdigest(); assert i['ruleset']['sha256']==h, (i['ruleset'], h); print('bundled rules match privacy-v2.json', h[:16])"
+
+  # The npm package in js/ (not a required check). It builds from the canonical head and rules, runs the
+  # conformance suite the Python tests run, then a differential test: random texts through both engines must
+  # give the same spans. Its version must match pyproject.toml, because one tag releases both.
+  js:
+    name: npm package (js/) builds and passes conformance
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: js
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: js/package-lock.json
+      - name: Version matches pyproject.toml
+        run: |
+          py="$(python -c "import tomllib; print(tomllib.load(open('../pyproject.toml','rb'))['project']['version'])")"
+          js="$(node -p "require('./package.json').version")"
+          [ "$py" = "$js" ] || { echo "::error file=js/package.json::version $js but pyproject.toml says $py"; exit 1; }
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - name: Python spans for the differential test
+        run: PYTHONPATH=../src python scripts/differential.py > test/differential.json
+      - run: npm test
+      - name: The packed tarball holds only what is whitelisted, and imports with no dependencies
+        run: |
+          npm pack --silent
+          tar -tzf privacy-gate-llm-*.tgz | sort
+          if tar -tzf privacy-gate-llm-*.tgz | grep -v -E '^package/(dist/.*|head-v1\.json|privacy-v2\.json|LICENSE|NOTICE|README\.md|package\.json)$'; then
+            echo "::error::the tarball holds a file outside the whitelist"; exit 1
+          fi
+          mkdir /tmp/consumer && cd /tmp/consumer && npm init -y >/dev/null
+          npm install --no-audit --no-fund "$GITHUB_WORKSPACE"/js/privacy-gate-llm-*.tgz
+          node --input-type=module -e "import { THRESHOLD, findSensitive } from 'privacy-gate-llm'; console.log(THRESHOLD, findSensitive('sk-ant-api03-QQ11ww22EE33rr44TT55yy66').length)"
+          installed="$(find node_modules -mindepth 1 -maxdepth 1 ! -name '.*' | wc -l)"
+          [ "$installed" -eq 1 ] || { echo "::error::the package pulled in a dependency"; ls node_modules; exit 1; }

@@ -147,6 +147,10 @@ the cloud one, an **Open WebUI** filter, and a **GitHub Action** (`uses: YauhenB
 fails a pull request whose added lines read like health data, credentials or personal data written as prose.
 See [`integrations/`](integrations/).
 
+**JavaScript and TypeScript:** `npm install privacy-gate-llm` gives the same head (score a `bge-m3` embedding you
+already have) and the guard's pattern rules (layer L1), with no runtime dependencies. It passes the same
+conformance suite as the Python engine. See [`js/`](js/README.md).
+
 **It is not ready to ship.** 247 examples written by one person are
 enough to choose an architecture, not enough to set a threshold that decides what
 leaves a machine holding real patient data. See the end of `docs/JOURNAL.md` for

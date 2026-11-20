@@ -36,3 +36,10 @@ updates:
     groups:
       python-minor-and-patch:
         update-types: ["minor", "patch"]
+
+  # js/ has no runtime dependencies; this keeps its one dev dependency (typescript) and the lock file current.
+  - package-ecosystem: "npm"
+    directory: "/js"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "javascript"]

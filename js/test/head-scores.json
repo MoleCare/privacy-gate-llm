@@ -1,0 +1,10 @@
+{
+  "note": "Scores from the Python package (privacy_gate.head.Model.score on model/head-v1.json) for deterministic unit vectors: v[i] = sin(k * (i + 1)), L2-normalised; 'mean' is the head's training mean, L2-normalised. Regenerate with the snippet in js/README.md if the head changes.",
+  "cases": [
+    {"k": 1, "score": -4.133657626645507, "hold": false},
+    {"k": 7, "score": 1.576541432276852, "hold": true},
+    {"k": 31, "score": 1.32347356007392, "hold": true},
+    {"k": 101, "score": -1.6304615281526371, "hold": false},
+    {"k": "mean", "score": -0.1251372832764618, "hold": false}
+  ]
+}

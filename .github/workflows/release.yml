@@ -2,8 +2,14 @@ name: Release
 
 # A tag `vX.Y.Z` builds the wheel and the sdist, checks them, publishes to PyPI by trusted publishing (no
 # token in this repository: set the publisher up once on PyPI under the project `molecare-privacy-gate`, workflow
-# `release.yml`, environment `pypi`), attaches the artefacts to the GitHub release, and pushes the container
-# image to ghcr.io. Nothing here can run on a pull request.
+# `release.yml`, environment `pypi`), attaches the artefacts to the GitHub release, pushes the container
+# image to ghcr.io, and publishes the npm package in js/ (`privacy-gate-llm`, environment `npm`, with provenance).
+# Nothing here can run on a pull request.
+#
+# npm: trusted publishing can only be configured on npmjs.com once the package exists. Until then the job uses
+# the `NPM_TOKEN` secret of the `npm` environment if it is set (a granular token, publish rights on this one
+# package), or the owner publishes the first version by hand. After that, add the trusted publisher on npmjs.com
+# (repository YauhenBichel/privacy-gate-llm, workflow release.yml, environment npm) and delete the secret.
 
 on:
   push:
@@ -109,3 +115,37 @@ jobs:
           image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/privacy-gate"
           docker push "$image:${GITHUB_REF_NAME#v}"
           docker push "$image:latest"
+
+  npm:
+    name: publish the npm package (js/)
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write   # npm provenance, and trusted publishing once it is configured
+    defaults:
+      run:
+        working-directory: js
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Version in js/package.json matches the tag
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version="$(node -p "require('./package.json').version")"
+          [ "$tag" = "$version" ] || { echo "tag $tag but js/package.json says $version"; exit 1; }
+      # Trusted publishing needs npm 11.5.1 or newer; Node 22 ships npm 10.
+      - run: npm install -g npm@11.6.2
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - run: npm test
+      - name: npm publish --provenance --access public
+        run: npm publish --provenance --access public
+        env:
+          # Empty once trusted publishing is configured; npm then uses the OIDC token instead.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

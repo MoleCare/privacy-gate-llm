@@ -4,6 +4,17 @@ All notable changes. The head file has its own history in `docs/JOURNAL.md`; a n
 
 ## Unreleased
 
+npm package `privacy-gate-llm` (in `js/`): the head and the guard's L1 rules for JavaScript and TypeScript.
+
+- `score()`, `hold()`, `decide()` on a `bge-m3` embedding, with the same dimension and L2-norm refusals as
+  `Gate`. `findSensitive()` and `Ruleset`/`Rule` run `privacy-v2` with spans in code points, overlaps resolved as
+  in the Python guard. Zero runtime dependencies, ESM with types, Node 18+.
+- The head and rules are copied in at build time from `model/head-v1.json` and
+  `src/privacy_gate/guard/privacy-v2.json`, so the repository keeps one copy of each.
+- CI (`npm package (js/)`, not required): build, `rules/conformance.v2.json`, a Python-against-JavaScript
+  differential test on 3,000 random texts, and a check of the packed tarball. The release workflow publishes it
+  on each tag with provenance (environment `npm`), and its version must match `pyproject.toml`.
+
 Package split: the wheel carries the runtime only.
 
 - **Breaking for anyone importing the training code from the wheel.** `privacy_gate.calibrate`, `.evaluate`,

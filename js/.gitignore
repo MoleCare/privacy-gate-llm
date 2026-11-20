@@ -1,0 +1,11 @@
+node_modules/
+dist/
+src/generated/
+# Copied in by scripts/generate.mjs from the repository root; the repository keeps one copy of each.
+head-v1.json
+privacy-v2.json
+test/conformance.v2.json
+LICENSE
+NOTICE
+*.tgz
+test/differential.json

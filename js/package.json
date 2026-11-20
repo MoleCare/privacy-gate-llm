@@ -1,0 +1,50 @@
+{
+  "name": "privacy-gate-llm",
+  "version": "1.0.1",
+  "description": "Must this prompt stay on this machine? The privacy-gate head (bge-m3 embedding in, hold or send out) and its PII, PHI and secret pattern rules for JavaScript and TypeScript. Zero dependencies.",
+  "keywords": [
+    "privacy", "pii", "phi", "pii-detection", "phi-detection", "guardrails", "llm-guardrail", "llm-safety",
+    "prompt-privacy", "data-loss-prevention", "dlp", "secret-detection", "redaction", "gdpr", "healthcare",
+    "embeddings", "bge-m3", "llm-router", "openai", "claude", "ollama", "transformers.js"
+  ],
+  "homepage": "https://yauhenbichel.github.io/privacy-gate-llm/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YauhenBichel/privacy-gate-llm.git",
+    "directory": "js"
+  },
+  "bugs": "https://github.com/YauhenBichel/privacy-gate-llm/issues",
+  "license": "Apache-2.0",
+  "author": "Yauhen Bichel",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./head-v1.json": "./head-v1.json",
+    "./privacy-v2.json": "./privacy-v2.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/",
+    "head-v1.json",
+    "privacy-v2.json",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "build": "node scripts/generate.mjs && tsc -p tsconfig.json",
+    "test": "node --test test/*.test.mjs",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}
