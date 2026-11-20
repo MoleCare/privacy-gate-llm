@@ -1,7 +1,7 @@
 {
   "schema": "privacy-gate-rules/2",
   "id": "privacy-v2",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "updated": "2026-11-20",
   "seeded_from": {
     "repo": "llm-harness",
@@ -247,7 +247,8 @@
       "title": "Payment card number",
       "category": "card",
       "patterns": [
-        "\\b[2-6](?:\\d[ -]?){11,17}\\d\\b"
+        "\\b[2-6](?:\\d[ -]?){11,17}\\d\\b",
+        "\\b[2-6](?:\\d[ -]?){11,17}?\\d\\b"
       ],
       "validator": "luhn",
       "except_values": [
@@ -364,7 +365,7 @@
       "title": "IBAN (country length and mod 97)",
       "category": "iban",
       "patterns": [
-        "\\b[A-Z]{2}\\d{2}(?: ?[A-Z0-9]){11,30}\\b"
+        "\\b(?:NO\\d{2}(?: ?[A-Z0-9]){11}|BE\\d{2}(?: ?[A-Z0-9]){12}|(?:DK|FI|FO|GL|NL)\\d{2}(?: ?[A-Z0-9]){14}|(?:MK|SI)\\d{2}(?: ?[A-Z0-9]){15}|(?:AT|BA|EE|KZ|LT|LU|XK)\\d{2}(?: ?[A-Z0-9]){16}|(?:CH|HR|LI|LV)\\d{2}(?: ?[A-Z0-9]){17}|(?:BG|BH|CR|DE|GB|GE|IE|ME|RS|VA)\\d{2}(?: ?[A-Z0-9]){18}|(?:AE|GI|IL|IQ|TL)\\d{2}(?: ?[A-Z0-9]){19}|(?:AD|CZ|ES|MD|PK|RO|SA|SE|SK|TN|VG)\\d{2}(?: ?[A-Z0-9]){20}|(?:PT|ST)\\d{2}(?: ?[A-Z0-9]){21}|(?:IS|TR)\\d{2}(?: ?[A-Z0-9]){22}|(?:FR|GR|IT|MC|MR|SM)\\d{2}(?: ?[A-Z0-9]){23}|(?:AL|AZ|BY|CY|DO|GT|HU|LB|PL|SV)\\d{2}(?: ?[A-Z0-9]){24}|(?:BR|EG|PS|QA|UA)\\d{2}(?: ?[A-Z0-9]){25}|(?:JO|KW|MU)\\d{2}(?: ?[A-Z0-9]){26}|(?:MT|SC)\\d{2}(?: ?[A-Z0-9]){27}|LC\\d{2}(?: ?[A-Z0-9]){28})"
       ],
       "validator": "iban_mod97"
     },
@@ -422,5 +423,5 @@
     }
   ],
   "note": "Generated from rules/privacy-v2.yaml by scripts/build_rules.py. Do not edit by hand. Rationale and fixtures live in the source; fixtures are in rules/conformance.v2.json.",
-  "source_sha256": "2c3e8f34dc2a2b2c45e4b00918a12f0105ebb89cbb42235149a4c7dd7f150d45"
+  "source_sha256": "ba617eee82ef30c1003f8305a55cad385be0cabc413b6bb1fe62e4819ab1fd16"
 }
