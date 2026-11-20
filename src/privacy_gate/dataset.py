@@ -41,9 +41,7 @@ def load(path: str | Path) -> list[Example]:
         if row["id"] in seen:
             raise ValueError(f"{path}:{number} repeats id {row['id']!r}")
         seen.add(row["id"])
-        examples.append(
-            Example(id=row["id"], text=row["text"], label=row["label"], slice=row["slice"])
-        )
+        examples.append(Example(id=row["id"], text=row["text"], label=row["label"], slice=row["slice"]))
     if not examples:
         raise ValueError(f"{path} is empty")
     return examples

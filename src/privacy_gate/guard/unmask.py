@@ -90,7 +90,7 @@ class StreamUnmasker:
                 # A whole surrogate that runs into the held part waits with it, so the longer one can win.
                 cut = min(cut, match.start())
                 break
-            out.append(buffer[pos:match.start()])
+            out.append(buffer[pos : match.start()])
             out.append(m.replace(match.group(), self._escape))
             pos = match.end()
         out.append(buffer[pos:cut])

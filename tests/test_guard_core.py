@@ -77,8 +77,18 @@ class Walker(unittest.TestCase):
         self.assertEqual([u.text for u in scan_units({"k": "v", "n": 3}, pair_keys=False)], ["v"])
 
     def test_js_string_matches_javascript(self) -> None:
-        cases = [(True, "true"), (False, "false"), (40219, "40219"), (1.0, "1"), (1.5, "1.5"), (1e-7, "1e-7"),
-                 (1e21, "1e+21"), (float("nan"), "NaN"), (float("inf"), "Infinity"), (float("-inf"), "-Infinity")]
+        cases = [
+            (True, "true"),
+            (False, "false"),
+            (40219, "40219"),
+            (1.0, "1"),
+            (1.5, "1.5"),
+            (1e-7, "1e-7"),
+            (1e21, "1e+21"),
+            (float("nan"), "NaN"),
+            (float("inf"), "Infinity"),
+            (float("-inf"), "-Infinity"),
+        ]
         for value, expected in cases:
             self.assertEqual(js_string(value), expected, value)
 
@@ -120,11 +130,15 @@ class Walker(unittest.TestCase):
 
 class Normalise(unittest.TestCase):
     def found(self, text: str) -> list[tuple[str, str]]:
-        return [(f.category, text[f.start:f.end]) for f in detect(text, RULES)]
+        return [(f.category, text[f.start : f.end]) for f in detect(text, RULES)]
 
     def test_zero_width_and_escapes_and_full_width(self) -> None:
-        for text in ("ana.duarte\u200b@northgate.internal", "ana.duarte%40northgate.internal",
-                     "ana.duarte\\u0040northgate.internal", "ana.duarte＠northgate.internal"):
+        for text in (
+            "ana.duarte\u200b@northgate.internal",
+            "ana.duarte%40northgate.internal",
+            "ana.duarte\\u0040northgate.internal",
+            "ana.duarte＠northgate.internal",
+        ):
             self.assertEqual([c for c, _ in self.found(text)], ["email"], text)
             self.assertEqual(self.found(text)[0][1], text, "the span maps back to the whole original")
 
@@ -155,8 +169,9 @@ class PolicyTests(unittest.TestCase):
         policy = Policy.from_mapping({}, RULES)
         self.assertEqual((policy.profile, policy.mode, policy.on_block), ("lite", "enforce", "refuse"))
         self.assertEqual(policy.action("email", RULES), "mask")
-        self.assertEqual(Policy.from_mapping({"categories": {"email": "allow"}}, RULES).action("email", RULES),
-                         "allow")
+        self.assertEqual(
+            Policy.from_mapping({"categories": {"email": "allow"}}, RULES).action("email", RULES), "allow"
+        )
         with self.assertRaises(PolicyError):
             Policy.from_mapping({"categories": {"card": "mask"}}, RULES)
 
@@ -165,14 +180,28 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(policy.action("email", RULES, "deepseek"), "block")
         self.assertEqual(policy.action("email", RULES, "anthropic"), "mask")
         with self.assertRaises(PolicyError):
-            Policy.from_mapping({"categories": {"email": "block"},
-                                 "providers": {"x": {"categories": {"email": "mask"}}}}, RULES)
+            Policy.from_mapping(
+                {"categories": {"email": "block"}, "providers": {"x": {"categories": {"email": "mask"}}}},
+                RULES,
+            )
 
     def test_bad_policies_are_refused(self) -> None:
-        for bad in ([], {"nope": 1}, {"version": 2}, {"extends": "builtin:huge"}, {"mode": "loud"},
-                    {"categories": {"nope": "mask"}}, {"categories": {"email": "maybe"}}, {"on_block": "local"},
-                    {"on_block": "drop"}, {"local": {"url": "ftp://x"}}, {"shadow_block_categories": "yes"},
-                    {"allow": {"values_file": "/does/not/exist"}}, {"overlays": [3]}, {"providers": {"x": []}}):
+        for bad in (
+            [],
+            {"nope": 1},
+            {"version": 2},
+            {"extends": "builtin:huge"},
+            {"mode": "loud"},
+            {"categories": {"nope": "mask"}},
+            {"categories": {"email": "maybe"}},
+            {"on_block": "local"},
+            {"on_block": "drop"},
+            {"local": {"url": "ftp://x"}},
+            {"shadow_block_categories": "yes"},
+            {"allow": {"values_file": "/does/not/exist"}},
+            {"overlays": [3]},
+            {"providers": {"x": []}},
+        ):
             with self.assertRaises(PolicyError, msg=bad):
                 Policy.from_mapping(bad, RULES)  # type: ignore[arg-type]
 
@@ -182,8 +211,12 @@ class PolicyTests(unittest.TestCase):
         check_local_url("http://[::1]:8080")
         check_local_url("http://192.168.1.20:8080", ("192.168.1.20",))
         check_local_url("http://yserver.lan:8080", ("yserver.lan",))
-        for bad, hosts in (("http://192.168.1.20", ()), ("http://8.8.8.8", ("8.8.8.8",)),
-                           ("http://api.example.org", ()), ("file:///x", ())):
+        for bad, hosts in (
+            ("http://192.168.1.20", ()),
+            ("http://8.8.8.8", ("8.8.8.8",)),
+            ("http://api.example.org", ()),
+            ("file:///x", ()),
+        ):
             with self.assertRaises(PolicyError, msg=bad):
                 check_local_url(bad, hosts)
 
@@ -209,10 +242,14 @@ class PolicyTests(unittest.TestCase):
 class VaultTests(unittest.TestCase):
     def test_shapes(self) -> None:
         mac = bytes(range(32))
-        self.assertRegex(make_surrogate(mac, "email", "", EMAIL, False) or "", r"^m-[a-z2-7]{6}@masked\.invalid$")
+        self.assertRegex(
+            make_surrogate(mac, "email", "", EMAIL, False) or "", r"^m-[a-z2-7]{6}@masked\.invalid$"
+        )
         self.assertRegex(make_surrogate(mac, "phone", "", PHONE, False) or "", r"^\+44 7700 900\d{3}$")
-        self.assertRegex(make_surrogate(mac, "private_ip", "", "10.42.0.7", False) or "",
-                         r"^(192\.0\.2|198\.51\.100|203\.0\.113)\.\d{1,3}$")
+        self.assertRegex(
+            make_surrogate(mac, "private_ip", "", "10.42.0.7", False) or "",
+            r"^(192\.0\.2|198\.51\.100|203\.0\.113)\.\d{1,3}$",
+        )
         self.assertRegex(make_surrogate(mac, "private_ip", "", "fd00::1", False) or "", r"^2001:db8::")
         self.assertRegex(make_surrogate(mac, "home_path", "", "jdoe", False) or "", r"^u-[a-z2-7]{6}$")
         self.assertRegex(make_surrogate(mac, "tag", "IBAN", "x", False) or "", r"^<IBAN_[a-z2-7]{6}>$")
@@ -293,7 +330,7 @@ class Unmasking(unittest.TestCase):
         self.assertEqual(out, {"to": EMAIL, "ref": 'GB "quoted" \\ value'})
         buffer = ToolArgsBuffer(self.vault)
         for i in range(0, len(args), 5):
-            buffer.feed(args[i:i + 5])
+            buffer.feed(args[i : i + 5])
         self.assertEqual(json.loads(buffer.finish())["ref"], 'GB "quoted" \\ value')
 
 
@@ -305,14 +342,26 @@ class Audit(unittest.TestCase):
             digest = writer.hash_value("email", EMAIL)
             self.assertRegex(digest, r"^[0-9a-f]{8}$")
             self.assertEqual(writer.hash_value("email", EMAIL), digest)
-            self.assertEqual(AuditWriter(Path(tmp) / "audit.jsonl").hash_value("email", EMAIL), digest,
-                             "the key file is reused")
+            self.assertEqual(
+                AuditWriter(Path(tmp) / "audit.jsonl").hash_value("email", EMAIL),
+                digest,
+                "the key file is reused",
+            )
             guard = Guard.load()
             for _ in range(30):
                 writer.write(guard.protect({"q": f"mail {EMAIL}"}, hasher=writer.hash_value).decision)
             files = sorted(p.name for p in Path(tmp).iterdir())
-            self.assertEqual(files, ["audit.jsonl", "audit.jsonl.1", "audit.jsonl.2", "audit.jsonl.3",
-                                     "audit.jsonl.4", "audit.key"])
+            self.assertEqual(
+                files,
+                [
+                    "audit.jsonl",
+                    "audit.jsonl.1",
+                    "audit.jsonl.2",
+                    "audit.jsonl.3",
+                    "audit.jsonl.4",
+                    "audit.key",
+                ],
+            )
             self.assertEqual(stat.S_IMODE((Path(tmp) / "audit.jsonl").stat().st_mode), 0o600)
             record = json.loads((Path(tmp) / "audit.jsonl").read_text().splitlines()[-1])
             self.assertEqual(record["action"], "mask")
@@ -365,8 +414,11 @@ class Facade(unittest.TestCase):
         body = {"messages": [{"role": "user", "content": f"mail {EMAIL} from 10.42.0.7 on {PHONE}"}]}
         result = guard.protect(body, caller="c", session="s")
         self.assertEqual(result.decision.action, "mask")
-        self.assertEqual(body["messages"][0]["content"], f"mail {EMAIL} from 10.42.0.7 on {PHONE}",
-                         "the caller's body is not changed")
+        self.assertEqual(
+            body["messages"][0]["content"],
+            f"mail {EMAIL} from 10.42.0.7 on {PHONE}",
+            "the caller's body is not changed",
+        )
         sent = result.body["messages"][0]["content"]
         for value in (EMAIL, "10.42.0.7", PHONE):
             self.assertNotIn(value, sent)
@@ -394,8 +446,11 @@ class Facade(unittest.TestCase):
         self.assertEqual((masked.decision.action, masked.decision.would_action), ("allow", "mask"))
         self.assertIn("PG-EMAIL-001", masked.decision.shadow_rules)
         self.assertEqual(masked.body, {"q": f"mail {EMAIL}"})
-        self.assertEqual(shadow.protect({"q": f"card {CARD}"}).decision.action, "block",
-                         "shadow mode does not release a block category")
+        self.assertEqual(
+            shadow.protect({"q": f"card {CARD}"}).decision.action,
+            "block",
+            "shadow mode does not release a block category",
+        )
         loose = Guard.load({"mode": "shadow", "shadow_block_categories": True}).protect({"q": f"card {CARD}"})
         self.assertEqual((loose.decision.action, loose.decision.would_action), ("allow", "block"))
 
@@ -421,20 +476,34 @@ class Facade(unittest.TestCase):
         phone = vault.surrogate("phone", PHONE, "phone", "PHONE")
         left = residual(f"call {phone}, card {CARD} today", vault, RULES, ("L0", "L1"))
         self.assertEqual([f.category for f in left], ["card"])
-        self.assertEqual([f.category for f in residual(f"{phone} at 10.42.0.99", vault, RULES, ("L0", "L1"))
-                          if f.category != "card"], ["private_ip"], "an address the vault did not issue is kept")
+        self.assertEqual(
+            [
+                f.category
+                for f in residual(f"{phone} at 10.42.0.99", vault, RULES, ("L0", "L1"))
+                if f.category != "card"
+            ],
+            ["private_ip"],
+            "an address the vault did not issue is kept",
+        )
         cleared = 0
         for _ in range(300):
             fresh = Vault()
-            text = (f'{fresh.surrogate("phone", PHONE, "phone", "PHONE")} '
-                    f'{fresh.surrogate("private_ip", "10.42.0.7", "private_ip", "")}')
+            text = (
+                f"{fresh.surrogate('phone', PHONE, 'phone', 'PHONE')} "
+                f"{fresh.surrogate('private_ip', '10.42.0.7', 'private_ip', '')}"
+            )
             self.assertEqual(residual(text, fresh, RULES, ("L0", "L1")), [], text)
             cleared += any(f.category == "card" for f in detect(text, RULES))
         self.assertGreater(cleared, 0, "some pairs read as a card, and all of them are cleared")
 
     def test_on_block_local_and_provider_tightening(self) -> None:
-        guard = Guard.load({"on_block": "local", "local": {"url": "http://127.0.0.1:11500"},
-                            "providers": {"deepseek": {"categories": {"email": "block"}}}})
+        guard = Guard.load(
+            {
+                "on_block": "local",
+                "local": {"url": "http://127.0.0.1:11500"},
+                "providers": {"deepseek": {"categories": {"email": "block"}}},
+            }
+        )
         result = guard.protect({"q": f"card {CARD}"})
         self.assertEqual((result.decision.action, result.body), ("local", {"q": f"card {CARD}"}))
         self.assertFalse(result.decision.sends)
@@ -465,8 +534,12 @@ class Facade(unittest.TestCase):
 
     def test_fail_closed(self) -> None:
         self.assertIn("L2", Guard.load(profile="standard").failure or "")
-        for guard in (Guard.load({"overlays": ["/does/not/exist.json"]}), Guard.load({"mode": "loud"}),
-                      Guard.load(rules_path="/does/not/exist.json"), Guard.load(profile="huge")):
+        for guard in (
+            Guard.load({"overlays": ["/does/not/exist.json"]}),
+            Guard.load({"mode": "loud"}),
+            Guard.load(rules_path="/does/not/exist.json"),
+            Guard.load(profile="huge"),
+        ):
             decision = guard.protect({"q": "hello"}).decision
             self.assertEqual((decision.action, decision.fail_closed), ("block", True), guard.failure)
         boom = Guard.load(profile="standard", detectors={"L2": lambda text: 1 / 0})
@@ -481,9 +554,20 @@ class Facade(unittest.TestCase):
 
     def test_overlay_pinning(self) -> None:
         categories = {"secret": json.loads(Path(RULES_PATH).read_text())["categories"]["secret"]}
-        overlay = {"schema": "privacy-gate-rules/2", "id": "org", "version": "1", "categories": categories,
-                   "rules": [{"id": "PG-ORG-001", "title": "project code", "category": "secret",
-                              "patterns": ["\\bPRJ-[0-9]{4}\\b"]}]}
+        overlay = {
+            "schema": "privacy-gate-rules/2",
+            "id": "org",
+            "version": "1",
+            "categories": categories,
+            "rules": [
+                {
+                    "id": "PG-ORG-001",
+                    "title": "project code",
+                    "category": "secret",
+                    "patterns": ["\\bPRJ-[0-9]{4}\\b"],
+                }
+            ],
+        }
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "org.json"
             raw = json.dumps(overlay).encode()
@@ -511,8 +595,11 @@ class Facade(unittest.TestCase):
             {EMAIL: {"note": f"call {PHONE}"}},
             {"q": f"mail {EMAIL} [[send-as-is:email,card]]"},
         ]
-        guards = [Guard.load(), Guard.load({"mode": "shadow"}),
-                  Guard.load(profile="standard", detectors={"L2": lambda t: 1 / 0})]
+        guards = [
+            Guard.load(),
+            Guard.load({"mode": "shadow"}),
+            Guard.load(profile="standard", detectors={"L2": lambda t: 1 / 0}),
+        ]
         out, err = io.StringIO(), io.StringIO()
         with tempfile.TemporaryDirectory() as tmp, redirect_stdout(out), redirect_stderr(err):
             writer = AuditWriter(Path(tmp) / "audit.jsonl")

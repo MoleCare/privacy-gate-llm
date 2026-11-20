@@ -22,8 +22,12 @@ from privacy_gate.gate import Gate
 
 class Filter:
     class Valves(BaseModel):
-        action: str = Field(default="route", description="route: switch to local_model on a hold; block: refuse")
-        local_model: str = Field(default="qwen3-coder:30b", description="the model a held chat is switched to")
+        action: str = Field(
+            default="route", description="route: switch to local_model on a hold; block: refuse"
+        )
+        local_model: str = Field(
+            default="qwen3-coder:30b", description="the model a held chat is switched to"
+        )
         backend: str = Field(default="ollama", description="ollama | openai | local")
         url: str = Field(default="http://127.0.0.1:11434", description="the embedding endpoint")
         min_length: int = Field(default=12, description="shorter messages are not scored")
@@ -41,13 +45,18 @@ class Filter:
     def inlet(self, body: dict, __user__: dict | None = None) -> dict:
         messages = body.get("messages") or []
         texts = []
-        for message in messages[-self.valves.last_messages:]:
+        for message in messages[-self.valves.last_messages :]:
             content = message.get("content")
             if isinstance(content, str) and len(content) >= self.valves.min_length:
                 texts.append(content)
             elif isinstance(content, list):
-                texts += [p.get("text", "") for p in content if isinstance(p, dict) and p.get("type") == "text"
-                          and len(p.get("text", "")) >= self.valves.min_length]
+                texts += [
+                    p.get("text", "")
+                    for p in content
+                    if isinstance(p, dict)
+                    and p.get("type") == "text"
+                    and len(p.get("text", "")) >= self.valves.min_length
+                ]
         if not texts:
             return body
         try:
@@ -60,6 +69,10 @@ class Filter:
             return body
         if self.valves.action == "block":
             raise Exception(f"privacy-gate: this must stay on this machine (score {worst:.2f}); not sent.")
-        body.setdefault("metadata", {})["privacy_gate"] = {"hold": True, "score": worst, "routed_from": body.get("model")}
+        body.setdefault("metadata", {})["privacy_gate"] = {
+            "hold": True,
+            "score": worst,
+            "routed_from": body.get("model"),
+        }
         body["model"] = self.valves.local_model
         return body

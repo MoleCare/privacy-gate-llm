@@ -34,8 +34,20 @@ from .rules import Ruleset
 ACTIONS = ("allow", "mask", "block")
 _STRENGTH = {"allow": 0, "mask": 1, "block": 2}
 PROFILES = ("lite", "standard", "full")
-_TOP_KEYS = {"version", "extends", "mode", "providers", "categories", "on_block", "local", "allow", "notice",
-             "audit", "overlays", "shadow_block_categories"}
+_TOP_KEYS = {
+    "version",
+    "extends",
+    "mode",
+    "providers",
+    "categories",
+    "on_block",
+    "local",
+    "allow",
+    "notice",
+    "audit",
+    "overlays",
+    "shadow_block_categories",
+}
 _MARKER = re.compile(r"\[\[send-as-is:([a-z_]+(?:,[a-z_]+)*)\]\]")
 
 
@@ -134,16 +146,30 @@ class Policy:
         for item in data.get("overlays") or []:
             if isinstance(item, str):
                 item = {"path": item}
-            if not isinstance(item, dict) or set(item) - {"path", "sha256"} or not isinstance(item.get("path"), str):
+            if (
+                not isinstance(item, dict)
+                or set(item) - {"path", "sha256"}
+                or not isinstance(item.get("path"), str)
+            ):
                 raise PolicyError("overlays: each is a path or {path, sha256}")
             overlay_path = Path(item["path"]).expanduser()
             if not overlay_path.is_absolute() and base_dir is not None:
                 overlay_path = base_dir / overlay_path
             overlays.append((str(overlay_path), item.get("sha256")))
-        return cls(profile=extends[8:], mode=mode, categories=categories, providers=providers, on_block=on_block,
-                   local_url=local_url, shadow_block_categories=shadow_block, notice=bool(data.get("notice", False)),
-                   audit=dict(data.get("audit") or {}), overlays=tuple(overlays), _allow_salt=salt,
-                   _allow_hashes=frozenset(hashes))
+        return cls(
+            profile=extends[8:],
+            mode=mode,
+            categories=categories,
+            providers=providers,
+            on_block=on_block,
+            local_url=local_url,
+            shadow_block_categories=shadow_block,
+            notice=bool(data.get("notice", False)),
+            audit=dict(data.get("audit") or {}),
+            overlays=tuple(overlays),
+            _allow_salt=salt,
+            _allow_hashes=frozenset(hashes),
+        )
 
     @classmethod
     def load(cls, path: str | Path, ruleset: Ruleset) -> Policy:

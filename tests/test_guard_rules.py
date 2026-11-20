@@ -51,14 +51,19 @@ class Conformance(unittest.TestCase):
 
     def test_suite_is_for_the_shipped_rules(self) -> None:
         # The suite names the ruleset by the hash of the compiled file, which is what every engine loads.
-        self.assertEqual(self.suite["ruleset"]["sha256"], hashlib.sha256(DEFAULT_RULES_PATH.read_bytes()).hexdigest())
+        self.assertEqual(
+            self.suite["ruleset"]["sha256"], hashlib.sha256(DEFAULT_RULES_PATH.read_bytes()).hexdigest()
+        )
         self.assertEqual(self.suite["ruleset"]["sha256"], self.rules.sha256)
 
     def test_compiled_rules_match_the_yaml_source(self) -> None:
         # The standard-library check that the generated files were rebuilt after the YAML changed; CI also
         # runs `build_rules.py --check`, which needs PyYAML.
-        self.assertEqual(compiled()["source_sha256"], hashlib.sha256(SOURCE.read_bytes()).hexdigest(),
-                         "rules/privacy-v2.yaml changed: run scripts/build_rules.py")
+        self.assertEqual(
+            compiled()["source_sha256"],
+            hashlib.sha256(SOURCE.read_bytes()).hexdigest(),
+            "rules/privacy-v2.yaml changed: run scripts/build_rules.py",
+        )
 
     def test_every_rule_has_hits_and_near_misses(self) -> None:
         for rule in self.rules.rules:
@@ -83,8 +88,10 @@ class Conformance(unittest.TestCase):
         for category in self.rules.categories.values():
             if category.action == "block":
                 self.assertFalse(category.overridable, category.name)
-        self.assertEqual({c.name for c in self.rules.categories.values() if c.action == "block"},
-                         {"secret", "card", "patient_or_national_id", "health_prose", "image_document"})
+        self.assertEqual(
+            {c.name for c in self.rules.categories.values() if c.action == "block"},
+            {"secret", "card", "patient_or_national_id", "health_prose", "image_document"},
+        )
 
 
 class Schema(unittest.TestCase):
@@ -135,8 +142,22 @@ class Schema(unittest.TestCase):
             self.load(lambda d: d.update(schema="privacy-gate-rules/1"))
 
     def test_non_portable_regexes_are_refused(self) -> None:
-        for regex in (r"a(?=b)", r"a(?!b)", r"(?<=a)b", r"(?<!a)b", r"(a)\1", r"(?P<n>a)", r"(?<n>a)",
-                      r"(?P=n)", r"(?>a)", r"a*+", r"a++", r"\Aabc", r"abc\Z", r"a(?i)b"):
+        for regex in (
+            r"a(?=b)",
+            r"a(?!b)",
+            r"(?<=a)b",
+            r"(?<!a)b",
+            r"(a)\1",
+            r"(?P<n>a)",
+            r"(?<n>a)",
+            r"(?P=n)",
+            r"(?>a)",
+            r"a*+",
+            r"a++",
+            r"\Aabc",
+            r"abc\Z",
+            r"a(?i)b",
+        ):
             with self.subTest(regex=regex), self.assertRaises(RulesError):
                 check_portable(regex)
         for regex in (r"(?i)abc", r"\*+", r"[A-Za-z0-9+/]{512,}", r"(?:a|b)+", r"\\1"):
@@ -145,10 +166,20 @@ class Schema(unittest.TestCase):
 
     def test_overlay_adds_rules_but_cannot_reuse_ids_or_invent_categories(self) -> None:
         base = Ruleset.load()
-        overlay_data = {"schema": "privacy-gate-rules/2", "id": "clinic", "version": "1",
-                        "categories": {"patient_or_national_id": compiled()["categories"]["patient_or_national_id"]},
-                        "rules": [{"id": "PG-CLINIC-001", "title": "Clinic record", "category": "patient_or_national_id",
-                                   "patterns": [r"\bCLN-\d{6}\b"]}]}
+        overlay_data = {
+            "schema": "privacy-gate-rules/2",
+            "id": "clinic",
+            "version": "1",
+            "categories": {"patient_or_national_id": compiled()["categories"]["patient_or_national_id"]},
+            "rules": [
+                {
+                    "id": "PG-CLINIC-001",
+                    "title": "Clinic record",
+                    "category": "patient_or_national_id",
+                    "patterns": [r"\bCLN-\d{6}\b"],
+                }
+            ],
+        }
         merged = base.with_overlay(Ruleset.from_mapping(overlay_data))
         self.assertEqual(merged.rule("PG-CLINIC-001").spans("see CLN-000123 today"), [(4, 14)])
         self.assertNotEqual(merged.sha256, base.sha256)
@@ -157,8 +188,15 @@ class Schema(unittest.TestCase):
         with self.assertRaisesRegex(RulesError, "already used"):
             base.with_overlay(Ruleset.from_mapping(clash))
         stray = copy.deepcopy(overlay_data)
-        stray["categories"] = {"hobbies": {"title": "x", "action": "mask", "overridable": True,
-                                           "surrogate": "tag", "layers": ["L1"]}}
+        stray["categories"] = {
+            "hobbies": {
+                "title": "x",
+                "action": "mask",
+                "overridable": True,
+                "surrogate": "tag",
+                "layers": ["L1"],
+            }
+        }
         stray["rules"][0]["category"] = "hobbies"
         with self.assertRaisesRegex(RulesError, "unknown category"):
             base.with_overlay(Ruleset.from_mapping(stray))
@@ -166,11 +204,17 @@ class Schema(unittest.TestCase):
 
 class Matching(unittest.TestCase):
     def test_spans_from_several_patterns_merge(self) -> None:
-        rule = Ruleset.from_mapping({
-            "schema": "privacy-gate-rules/2", "id": "t", "version": "1",
-            "categories": {"secret": compiled()["categories"]["secret"]},
-            "rules": [{"id": "PG-T-001", "title": "t", "category": "secret", "patterns": ["abcd", "cdef", "x"]}],
-        }).rules[0]
+        rule = Ruleset.from_mapping(
+            {
+                "schema": "privacy-gate-rules/2",
+                "id": "t",
+                "version": "1",
+                "categories": {"secret": compiled()["categories"]["secret"]},
+                "rules": [
+                    {"id": "PG-T-001", "title": "t", "category": "secret", "patterns": ["abcd", "cdef", "x"]}
+                ],
+            }
+        ).rules[0]
         self.assertEqual(rule.spans("abcdef x"), [(0, 6), (7, 8)])
 
     def test_word_boundaries_are_ascii_as_in_re2_and_javascript(self) -> None:
@@ -204,9 +248,24 @@ class Validators(unittest.TestCase):
             self.assertFalse(us_ssn_area(invalid), invalid)
 
     def test_private_addresses(self) -> None:
-        for address in ("10.1.2.3", "172.16.0.5", "172.31.255.254", "192.168.1.20", "169.254.1.1", "100.64.0.1"):
+        for address in (
+            "10.1.2.3",
+            "172.16.0.5",
+            "172.31.255.254",
+            "192.168.1.20",
+            "169.254.1.1",
+            "100.64.0.1",
+        ):
             self.assertTrue(private_ipv4(address), address)
-        for address in ("172.32.0.1", "8.8.8.8", "192.0.2.10", "127.0.0.1", "10.0.0.0", "999.1.1.1", "010.1.1.1"):
+        for address in (
+            "172.32.0.1",
+            "8.8.8.8",
+            "192.0.2.10",
+            "127.0.0.1",
+            "10.0.0.0",
+            "999.1.1.1",
+            "010.1.1.1",
+        ):
             self.assertFalse(private_ipv4(address), address)
         self.assertTrue(private_ipv6("fd12:3456:789a::1"))
         self.assertTrue(private_ipv6("fe80::1"))
@@ -231,12 +290,22 @@ class Budget(unittest.TestCase):
         return time.perf_counter() - started
 
     def test_ordinary_text(self) -> None:
-        line = "the deploy on 2026-11-20 failed at step 4 of 12; see build 1732096800 and retry, version 1.2.3\n"
+        line = (
+            "the deploy on 2026-11-20 failed at step 4 of 12; see build 1732096800 and retry, version 1.2.3\n"
+        )
         self.assertLess(self.scan(line * (60_000 // len(line))), 1.0)
 
     def test_inputs_that_make_backtracking_regexes_slow(self) -> None:
-        for text in ("a." * 30_000, "1 " * 30_000, "@" * 60_000, "a" * 60_000, "-" * 60_000,
-                     "/Users/" * 8_000, "+4" * 30_000, "x@" * 30_000):
+        for text in (
+            "a." * 30_000,
+            "1 " * 30_000,
+            "@" * 60_000,
+            "a" * 60_000,
+            "-" * 60_000,
+            "/Users/" * 8_000,
+            "+4" * 30_000,
+            "x@" * 30_000,
+        ):
             with self.subTest(text=text[:12]):
                 self.assertLess(self.scan(text), 2.0)
 
