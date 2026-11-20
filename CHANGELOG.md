@@ -2,6 +2,19 @@
 
 All notable changes. The head file has its own history in `docs/JOURNAL.md`; a new head is a new minor version.
 
+## 1.0.1 — 2026-11-20
+
+The repository moved from `MoleCare/privacy-gate-llm` to
+[`YauhenBichel/privacy-gate-llm`](https://github.com/YauhenBichel/privacy-gate-llm). Old links redirect.
+The code and the gate (`model/head-v1.json`) are unchanged from 1.0.0; this release only updates the project URLs
+PyPI shows.
+
+- PyPI: still `molecare-privacy-gate`; the `privacy-gate` command and the `privacy_gate` import are unchanged.
+- Container image: now `ghcr.io/yauhenbichel/privacy-gate` (was `ghcr.io/molecare/privacy-gate`).
+- GitHub Action: `uses: YauhenBichel/privacy-gate-llm@v1`. The release workflow now moves the `v1` tag to each
+  1.x release, so `@v1` resolves (before, only `v1.0.0` existed).
+- Homebrew: `brew install yauhenbichel/tap/privacy-gate`.
+
 ## 1.0.0 — 2026-10-08
 
 Published on PyPI as `molecare-privacy-gate`: PyPI does not allow `privacy-gate`, which it treats as too

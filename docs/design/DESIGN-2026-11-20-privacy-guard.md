@@ -99,7 +99,7 @@ docs/design/, docs/architecture/ this document; ADR 0002 "the guard lives with t
 
 | Surface | Who | How | Strength | Weakness |
 |---|---|---|---|---|
-| **Local proxy (MVP)** | anyone using Claude Code, an IDE assistant, a script or an SDK they cannot edit | `pipx install 'molecare-privacy-gate[proxy]'` or `uvx --from 'molecare-privacy-gate[proxy]' privacy-gate proxy`, or `docker run -p 127.0.0.1:8232:8232 ghcr.io/molecare/privacy-gate:proxy`; then set a base URL | works for every client that honours a base URL, without code changes; one place for policy and audit | one more process; a client that ignores the base URL bypasses it |
+| **Local proxy (MVP)** | anyone using Claude Code, an IDE assistant, a script or an SDK they cannot edit | `pipx install 'molecare-privacy-gate[proxy]'` or `uvx --from 'molecare-privacy-gate[proxy]' privacy-gate proxy`, or `docker run -p 127.0.0.1:8232:8232 ghcr.io/yauhenbichel/privacy-gate:proxy`; then set a base URL | works for every client that honours a base URL, without code changes; one place for policy and audit | one more process; a client that ignores the base URL bypasses it |
 | SDK wrapper, Python | developers of an app | `Anthropic(http_client=privacy_gate.sdk.client())`, `OpenAI(http_client=...)`, the same for DeepSeek through `OpenAI(base_url="https://api.deepseek.com", http_client=...)` | no process; in the app's own trust boundary | only that app is covered |
 | SDK wrapper, TypeScript | developers of a Node app, and llm-harness | `new Anthropic({ fetch: guardedFetch() })`, `new OpenAI({ fetch: guardedFetch() })` from `@molecare/privacy-gate` | same | only the L0/L1 engine in-process; entity spans need the proxy or `privacy-gate serve` (section 4) |
 | Claude Code hook helper | Claude Code users who want a second line | `privacy-gate hook claude-code` for `UserPromptSubmit` (refuse a prompt with a must-block finding) and `PreToolUse` (deny reading `.env`, key files, `~/.ssh`) | stops material entering context at all | not a guard: tool results and history are only covered by the proxy |
@@ -192,10 +192,10 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-  SRC["MoleCare/privacy-gate-llm<br/>one repository, one rules file"]
+  SRC["YauhenBichel/privacy-gate-llm<br/>one repository, one rules file"]
   SRC --> PYPI["PyPI: molecare-privacy-gate<br/>core stdlib-only, extras [proxy] [ner] [local] [all]"]
   SRC --> NPM["npm: @molecare/privacy-gate<br/>TS engine + guardedFetch"]
-  SRC --> GHCR["GHCR: ghcr.io/molecare/privacy-gate<br/>tags :proxy-lite, :proxy, :gate"]
+  SRC --> GHCR["GHCR: ghcr.io/yauhenbichel/privacy-gate<br/>tags :proxy-lite, :proxy, :gate"]
   SRC --> HF["Hugging Face: head + dataset + demo (exists)"]
   PYPI --> D1["pipx / uvx: privacy-gate proxy<br/>laptop, loopback :8232"]
   PYPI --> D2["Python SDK wrapper<br/>in-process httpx transport"]
@@ -582,7 +582,7 @@ and P10 bring the maintainer's own router onto the same code. **MVP = P0 to P4 (
 | PyPI distribution | **`molecare-privacy-gate`** (exists, 1.0.0) | owned **[live]** | stays the one distribution; the guard is 2.0.0 because the package's scope changes (the existing API is unchanged and additive) |
 | PyPI alias (optional) | `privacy-gate-llm` | not taken on PyPI **[live]** (JSON API 404); whether PyPI accepts it is **[unverified]**: it refused `privacy-gate` as too similar to another project (CHANGELOG 1.0.0) | a thin meta-package depending on `molecare-privacy-gate[proxy]`, so the repository name installs; also blocks typosquatting (D4) |
 | npm | **`@molecare/privacy-gate`** | the name is not taken **[live]**; whether the `molecare` scope can be created is **[unverified]** | fallback unscoped `privacy-gate-llm` (not taken **[live]**); published with npm provenance from GitHub Actions OIDC |
-| container | `ghcr.io/molecare/privacy-gate` with tags `:proxy-lite-<v>`, `:proxy-<v>` (with GLiNER), `:gate-<v>` (today's sidecar) | the release workflow already pushes this image name **[doc]**; its public page did not answer anonymously **[live]**, so it may be private | signed (cosign keyless) and with an SBOM; non-root user as today |
+| container | `ghcr.io/yauhenbichel/privacy-gate` with tags `:proxy-lite-<v>`, `:proxy-<v>` (with GLiNER), `:gate-<v>` (today's sidecar) | the release workflow already pushes this image name **[doc]**; its public page did not answer anonymously **[live]**, so it may be private | signed (cosign keyless) and with an SBOM; non-root user as today |
 | CLI | `privacy-gate` (`check`, `serve`, `info` exist; `proxy`, `status`, `doctor`, `models pull`, `hook` new) | | |
 
 **Versioning.** Semantic versioning for code. The rules file has its own version and SHA-256 (`privacy-v2@2.3.0`,
@@ -650,7 +650,7 @@ either drifts. Its other Python consumer can load the same YAML from the PyPI wh
 | # | Decision | Recommendation |
 |---|---|---|
 | D1 | Home of the guard | **(a) grow `privacy-gate-llm`** (section 1) |
-| D2 | Keep it under the MoleCare organisation and brand | **Yes** for now: the release pipeline, PyPI owner and image are there; revisit if outside users find the health brand confusing |
+| D2 | Keep it under the MoleCare organisation and brand | **Superseded 20 Nov 2026**: the owner moved the repository to `YauhenBichel/privacy-gate-llm`; the PyPI distribution keeps its name `molecare-privacy-gate`, the image is now `ghcr.io/yauhenbichel/privacy-gate` |
 | D3 | MVP surface | **The local proxy in Python** (P0 to P4); SDK wrappers, TS engine and hook helper after |
 | D4 | Package names | **Keep `molecare-privacy-gate`** as the distribution; **reserve `privacy-gate-llm`** on PyPI as an alias; npm **`@molecare/privacy-gate`** (create the scope), fallback `privacy-gate-llm` |
 | D5 | Default profile for the proxy image | **`standard`** (with GLiNER); `pip install` stays `lite` with no download |

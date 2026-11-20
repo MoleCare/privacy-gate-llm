@@ -38,7 +38,7 @@ the action, the local model and the embedding endpoint.
 ## GitHub Actions
 
 ```yaml
-- uses: MoleCare/privacy-gate-llm@v1
+- uses: YauhenBichel/privacy-gate-llm@v1
   with:
     backend: local          # downloads BAAI/bge-m3 once per runner cache
 ```

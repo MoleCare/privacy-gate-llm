@@ -1,7 +1,7 @@
 """
 title: privacy-gate
 author: MoleCare
-author_url: https://github.com/MoleCare/privacy-gate-llm
+author_url: https://github.com/YauhenBichel/privacy-gate-llm
 version: 1.0.0
 license: Apache-2.0
 description: Keep sensitive chats on a local model. A 1,024-weight head on bge-m3 catches health data, credentials and personal data written as plain English; when it holds, the chat is switched to a local model (or refused).
