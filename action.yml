@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 name: privacy-gate
 description: Fail a pull request whose added lines look like health data, credentials or personal data written as plain English. A 1,024-weight head on bge-m3; the encoder runs on the runner.
-author: MoleCare
+author: Yauhen Bichel
 branding:
   icon: shield
   color: yellow

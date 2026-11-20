@@ -38,7 +38,7 @@ sent anywhere, and the page keeps no logs. A static Space, so it needs no server
 The second tab is the gold-set explorer: 147 evaluation examples with five-fold cross-validated scores,
 precomputed and committed.
 
-- Code, data and journal: [github.com/MoleCare/privacy-gate-llm](https://github.com/MoleCare/privacy-gate-llm)
+- Code, data and journal: [github.com/YauhenBichel/privacy-gate-llm](https://github.com/YauhenBichel/privacy-gate-llm)
 - Model: [YauhenBichel/privacy-gate-llm](https://huggingface.co/YauhenBichel/privacy-gate-llm) ·
   data: [YauhenBichel/privacy-gate-gold](https://huggingface.co/datasets/YauhenBichel/privacy-gate-gold) ·
   `pip install molecare-privacy-gate`

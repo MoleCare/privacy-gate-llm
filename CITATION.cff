@@ -6,10 +6,10 @@ authors:
     given-names: Yauhen
 type: software
 license: Apache-2.0
-repository-code: "https://github.com/MoleCare/privacy-gate-llm"
+repository-code: "https://github.com/YauhenBichel/privacy-gate-llm"
 url: "https://huggingface.co/YauhenBichel/privacy-gate-llm"
-version: 1.0.0
-date-released: 2026-09-22
+version: 1.0.1
+date-released: 2026-11-20
 keywords:
   - privacy
   - pii-detection
