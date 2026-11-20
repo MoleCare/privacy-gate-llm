@@ -14,6 +14,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from typing import Any
 
 DEFAULT_URL = "http://127.0.0.1:11434"
 
@@ -43,7 +44,7 @@ class OllamaError(RuntimeError):
     pass
 
 
-def _post(url: str, path: str, payload: dict, timeout: float, attempts: int = 4) -> dict:
+def _post(url: str, path: str, payload: dict[str, Any], timeout: float, attempts: int = 4) -> dict[str, Any]:
     """POST with backoff.
 
     An inference host is usually shared. Another client can load a 50 GB model
@@ -62,7 +63,8 @@ def _post(url: str, path: str, payload: dict, timeout: float, attempts: int = 4)
         )
         try:
             with urllib.request.urlopen(request, timeout=timeout) as response:
-                return json.loads(response.read())
+                body: dict[str, Any] = json.loads(response.read())
+                return body
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
             last = error
             if attempt < attempts - 1:
@@ -77,7 +79,7 @@ def chat(
     messages: list[dict[str, str]],
     *,
     url: str = DEFAULT_URL,
-    schema: dict | None = None,
+    schema: dict[str, Any] | None = None,
     keep_alive: str | int = "30m",
     # Generous, because the first call of a run may have to evict a 20 GB model
     # and load this one. That took 145 s when measured; generation itself is in
@@ -88,7 +90,7 @@ def chat(
 ) -> Reply:
     """One greedy classification. Thinking is off: this is a lookup, not a puzzle,
     and a thinking model would spend hundreds of tokens to say one word."""
-    payload: dict = {
+    payload: dict[str, Any] = {
         "model": model,
         "messages": messages,
         "stream": False,
@@ -107,10 +109,7 @@ def chat(
     per_position: list[dict[str, float]] | None = None
     if logprobs:
         per_position = [
-            {
-                entry["token"]: float(entry["logprob"])
-                for entry in position.get("top_logprobs", [])
-            }
+            {entry["token"]: float(entry["logprob"]) for entry in position.get("top_logprobs", [])}
             for position in (body.get("logprobs") or [])
         ]
     return Reply(
@@ -121,11 +120,12 @@ def chat(
     )
 
 
-def resident(url: str = DEFAULT_URL) -> list[dict]:
+def resident(url: str = DEFAULT_URL) -> list[dict[str, Any]]:
     """What is loaded right now, so a run can put the box back as it found it."""
     request = urllib.request.Request(url + "/api/ps")
     with urllib.request.urlopen(request, timeout=30) as response:
-        return json.loads(response.read()).get("models", [])
+        models: list[dict[str, Any]] = json.loads(response.read()).get("models", [])
+        return models
 
 
 def pin(model: str, url: str = DEFAULT_URL) -> None:

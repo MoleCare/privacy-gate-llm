@@ -27,8 +27,10 @@ def mask_text(text: str, findings: Iterable[Finding], vault: Vault, ruleset: Rul
     out = text
     for finding in sorted(findings, key=lambda f: f.start, reverse=True):
         kind, label = surrogate_kind(finding, ruleset)
-        value = text[finding.start:finding.end]
-        out = out[:finding.start] + vault.surrogate(finding.category, value, kind, label) + out[finding.end:]
+        value = text[finding.start : finding.end]
+        out = (
+            out[: finding.start] + vault.surrogate(finding.category, value, kind, label) + out[finding.end :]
+        )
     return out
 
 
@@ -44,7 +46,7 @@ def residual(text: str, vault: Vault, ruleset: Ruleset, layers: Iterable[str]) -
     surrogates = sorted(vault.surrogates(), key=len, reverse=True)
     if surrogates:
         for match in re.finditer("|".join(map(re.escape, surrogates)), text):
-            covered[match.start():match.end()] = [True] * (match.end() - match.start())
+            covered[match.start() : match.end()] = [True] * (match.end() - match.start())
     left = []
     for finding in detect(text, ruleset, layers):
         if any(text[i].isalnum() and not covered[i] for i in range(finding.start, finding.end)):

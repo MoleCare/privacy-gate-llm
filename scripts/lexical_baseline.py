@@ -16,10 +16,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from privacy_gate import head  # noqa: E402
-from privacy_gate.dataset import load  # noqa: E402
-from privacy_gate.features import length_report, vectorise  # noqa: E402
-from privacy_gate.labels import holds  # noqa: E402
+from privacy_gate import head
+from privacy_gate.dataset import load
+from privacy_gate.features import length_report, vectorise
+from privacy_gate.labels import holds
 
 
 def main() -> int:
@@ -79,8 +79,7 @@ def main() -> int:
         eligible = [p for p in points if p[ckey] >= target]
         if eligible:
             best = min(eligible, key=lambda p: p[fkey])
-            print(f"- catch >= {target:.0%}: friction {best[fkey]:.1%} "
-                  f"(threshold {best['threshold']:+.3f})")
+            print(f"- catch >= {target:.0%}: friction {best[fkey]:.1%} (threshold {best['threshold']:+.3f})")
 
     print("\n### By slice, at the catch >= 98% operating point\n")
     eligible = [p for p in points if p[ckey] >= 0.98]
@@ -99,9 +98,7 @@ def main() -> int:
     if args.out:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
         Path(args.out).write_text(
-            json.dumps(
-                {"auc": result.auc, "lengths": lengths, "points": points}, indent=2
-            )
+            json.dumps({"auc": result.auc, "lengths": lengths, "points": points}, indent=2)
         )
     return 0
 

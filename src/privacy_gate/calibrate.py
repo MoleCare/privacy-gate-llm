@@ -28,10 +28,12 @@ a randomly chosen clean one. 0.5 is a coin flip and means no signal at all.
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any
 
 from . import ollama, prompt
 from .dataset import Example, load
@@ -83,9 +85,7 @@ def answer_position(positions: list[dict[str, float]]) -> dict[str, float]:
     for logprobs in positions:
         if _best(logprobs, KEEP_TOKENS) is not None or _best(logprobs, SEND_TOKENS) is not None:
             return logprobs
-    raise NoAnswerPosition(
-        f"neither KEEP nor SEND in the top-k at any of {len(positions)} positions"
-    )
+    raise NoAnswerPosition(f"neither KEEP nor SEND in the top-k at any of {len(positions)} positions")
 
 
 def score_one(text: str, model: str, *, url: str, top_k: int = 20) -> tuple[float, float, float]:
@@ -107,9 +107,7 @@ def score_one(text: str, model: str, *, url: str, top_k: int = 20) -> tuple[floa
     return keep - send, keep, send
 
 
-def collect(
-    examples: list[Example], model: str, *, url: str, checkpoint: Path | None = None
-) -> list[Scored]:
+def collect(examples: list[Example], model: str, *, url: str, checkpoint: Path | None = None) -> list[Scored]:
     done: dict[str, Scored] = {}
     if checkpoint and checkpoint.exists():
         for line in checkpoint.read_text().splitlines():
@@ -149,25 +147,22 @@ def auc(scored: list[Scored]) -> float:
     negatives = [s.margin for s in scored if not s.sensitive]
     if not positives or not negatives:
         return float("nan")
-    wins = sum(
-        1.0 if p > n else 0.5 if p == n else 0.0 for p in positives for n in negatives
-    )
+    wins = sum(1.0 if p > n else 0.5 if p == n else 0.0 for p in positives for n in negatives)
     return wins / (len(positives) * len(negatives))
 
 
-def sweep(scored: list[Scored], rules: dict[str, bool] | None = None) -> list[dict]:
+def sweep(scored: list[Scored], rules: dict[str, bool] | None = None) -> list[dict[str, Any]]:
     """Every distinct operating point, as thresholds between adjacent margins."""
     positives = [s for s in scored if s.sensitive]
     negatives = [s for s in scored if not s.sensitive]
     cuts = sorted({s.margin for s in scored})
     # One cut below everything (hold nothing) through one above everything.
-    candidates = [cuts[0] - 1.0] + [
-        (a + b) / 2 for a, b in zip(cuts, cuts[1:])
-    ] + [cuts[-1] + 1.0]
+    candidates = [cuts[0] - 1.0] + [(a + b) / 2 for a, b in itertools.pairwise(cuts)] + [cuts[-1] + 1.0]
 
     points = []
     for threshold in candidates:
-        def held(s: Scored) -> bool:
+
+        def held(s: Scored, threshold: float = threshold) -> bool:
             return s.margin > threshold
 
         caught = sum(1 for s in positives if held(s))
@@ -181,9 +176,7 @@ def sweep(scored: list[Scored], rules: dict[str, bool] | None = None) -> list[di
         }
         if rules is not None:
             composed_caught = sum(1 for s in positives if held(s) or rules.get(s.id, False))
-            composed_friction = sum(
-                1 for s in negatives if held(s) or rules.get(s.id, False)
-            )
+            composed_friction = sum(1 for s in negatives if held(s) or rules.get(s.id, False))
             point["composed_catch_rate"] = round(composed_caught / len(positives), 4)
             point["composed_friction_rate"] = round(composed_friction / len(negatives), 4)
             point["composed_leaks"] = len(positives) - composed_caught
@@ -191,7 +184,7 @@ def sweep(scored: list[Scored], rules: dict[str, bool] | None = None) -> list[di
     return points
 
 
-def pick(points: list[dict], min_catch: float) -> dict | None:
+def pick(points: list[dict[str, Any]], min_catch: float) -> dict[str, Any] | None:
     """The least annoying threshold that still catches enough.
 
     Catch is the constraint and friction is what gets minimised, not the other
@@ -215,28 +208,30 @@ def main(argv: list[str] | None = None) -> int:
 
     examples = load(args.data)
     rules = json.loads(Path(args.rules).read_text()) if args.rules else None
-    scored = collect(
-        examples, args.model, url=args.url, checkpoint=Path(f"{args.out}.partial.jsonl")
-    )
+    scored = collect(examples, args.model, url=args.url, checkpoint=Path(f"{args.out}.partial.jsonl"))
     points = sweep(scored, rules)
     area = auc(scored)
     chosen = pick(points, args.min_catch)
 
     print(f"### {args.model} — scored gate\n")
-    print(f"**AUC {area:.4f}** over {len(scored)} examples "
-          f"({sum(s.sensitive for s in scored)} sensitive). 0.5 would be no signal at all.\n")
+    print(
+        f"**AUC {area:.4f}** over {len(scored)} examples "
+        f"({sum(s.sensitive for s in scored)} sensitive). 0.5 would be no signal at all.\n"
+    )
     if chosen:
         key = "composed_catch_rate" if "composed_catch_rate" in chosen else "catch_rate"
         fkey = "composed_friction_rate" if "composed_friction_rate" in chosen else "friction_rate"
-        print(f"Best operating point at catch >= {args.min_catch:.0%}: "
-              f"threshold {chosen['threshold']:+.3f}, "
-              f"catch {chosen[key]:.1%}, friction {chosen[fkey]:.1%}.\n")
+        print(
+            f"Best operating point at catch >= {args.min_catch:.0%}: "
+            f"threshold {chosen['threshold']:+.3f}, "
+            f"catch {chosen[key]:.1%}, friction {chosen[fkey]:.1%}.\n"
+        )
     else:
         print(f"No threshold reaches catch >= {args.min_catch:.0%}.\n")
 
     print("| threshold | catch | friction |")
     print("|---|---|---|")
-    seen: set[tuple] = set()
+    seen: set[tuple[Any, Any]] = set()
     for point in points:
         key = "composed_catch_rate" if "composed_catch_rate" in point else "catch_rate"
         fkey = "composed_friction_rate" if "composed_friction_rate" in point else "friction_rate"

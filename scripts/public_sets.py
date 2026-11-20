@@ -42,15 +42,15 @@ import random
 import re
 import sys
 import time
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from privacy_gate import backends  # noqa: E402
-from privacy_gate.dataset import load  # noqa: E402
-from privacy_gate.gate import Gate  # noqa: E402
-from privacy_gate.head import auc  # noqa: E402
+from privacy_gate import backends
+from privacy_gate.dataset import load
+from privacy_gate.gate import Gate
+from privacy_gate.head import auc
 
 # ---- convert -------------------------------------------------------------------------------------------------
 
@@ -58,13 +58,57 @@ CASE = re.compile(r'\{id: ([^,]+), category: ([^,]+), expect: ([^,]+), text: "((
 
 # piimb span labels come from several source sets, so the same thing has several names
 IDENTIFYING = {
-    "first_name", "last_name", "GIVENNAME", "SURNAME", "name", "person", "email", "EMAIL", "phone_number",
-    "TELEPHONENUMBER", "phone", "date_of_birth", "DATEOFBIRTH", "BUILDINGNUM", "STREET", "street_address",
-    "address", "CITY", "ZIPCODE", "postcode", "ssn", "SOCIALNUM", "social_security_number", "medical_record_number",
-    "account_number", "ACCOUNTNUM", "credit_card_number", "CREDITCARDNUMBER", "iban", "IBAN", "passport_number",
-    "PASSPORTNUM", "driver_license_number", "DRIVERLICENSENUM", "TAXNUM", "tax_id", "ip_address", "IPADDRESS",
-    "username", "USERNAME", "password", "PASSWORD", "api_key", "secret", "license_plate", "VEHICLEVIN",
-    "health_insurance_id", "IDCARDNUM", "national_id", "employee_id", "customer_id",
+    "first_name",
+    "last_name",
+    "GIVENNAME",
+    "SURNAME",
+    "name",
+    "person",
+    "email",
+    "EMAIL",
+    "phone_number",
+    "TELEPHONENUMBER",
+    "phone",
+    "date_of_birth",
+    "DATEOFBIRTH",
+    "BUILDINGNUM",
+    "STREET",
+    "street_address",
+    "address",
+    "CITY",
+    "ZIPCODE",
+    "postcode",
+    "ssn",
+    "SOCIALNUM",
+    "social_security_number",
+    "medical_record_number",
+    "account_number",
+    "ACCOUNTNUM",
+    "credit_card_number",
+    "CREDITCARDNUMBER",
+    "iban",
+    "IBAN",
+    "passport_number",
+    "PASSPORTNUM",
+    "driver_license_number",
+    "DRIVERLICENSENUM",
+    "TAXNUM",
+    "tax_id",
+    "ip_address",
+    "IPADDRESS",
+    "username",
+    "USERNAME",
+    "password",
+    "PASSWORD",
+    "api_key",
+    "secret",
+    "license_plate",
+    "VEHICLEVIN",
+    "health_insurance_id",
+    "IDCARDNUM",
+    "national_id",
+    "employee_id",
+    "customer_id",
 }
 
 
@@ -74,11 +118,17 @@ def convert_openshift(path: Path) -> list[dict]:
     rows = []
     for id_, category, expect, body in CASE.findall(text):
         body = body.replace('\\"', '"').replace("\\\\", "\\")
-        if expect == "local":
-            label = {"health": "HEALTH", "secret": "SECRET"}.get(category, "PII")
-        else:
-            label = "CLEAN"
-        rows.append({"id": f"os-{lang.group(1) if lang else 'xx'}-{id_}", "label": label, "slice": category, "text": body})
+        label = (
+            {"health": "HEALTH", "secret": "SECRET"}.get(category, "PII") if expect == "local" else "CLEAN"
+        )
+        rows.append(
+            {
+                "id": f"os-{lang.group(1) if lang else 'xx'}-{id_}",
+                "label": label,
+                "slice": category,
+                "text": body,
+            }
+        )
     return rows
 
 
@@ -100,22 +150,43 @@ def convert_piimb(path: Path, sample: int, seed: int) -> list[dict]:
     rows = []
     for kind, rows_in, label in (("pii", pii[:sample], "PII"), ("clean", clean[:sample], "CLEAN")):
         for row in rows_in:
-            rows.append({"id": f"piimb-{row['uid']}", "label": label, "slice": f"piimb-{kind}", "text": row["text"].strip()})
+            rows.append(
+                {
+                    "id": f"piimb-{row['uid']}",
+                    "label": label,
+                    "slice": f"piimb-{kind}",
+                    "text": row["text"].strip(),
+                }
+            )
     return rows
 
 
 # ---- score -----------------------------------------------------------------------------------------------------
 
+
 def score_head(texts: list[str], backend: str, url: str | None, batch: int) -> list[float]:
     gate = Gate.load(embedder=backends.make_embedder(backend, url))
     scores: list[float] = []
     for start in range(0, len(texts), batch):
-        scores += [d.score for d in gate.decide_many(texts[start:start + batch])]
+        scores += [d.score for d in gate.decide_many(texts[start : start + batch])]
     return scores
 
 
-PRESIDIO_IDENTIFYING = {"PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER", "CREDIT_CARD", "IBAN_CODE", "US_SSN", "UK_NHS",
-                        "MEDICAL_LICENSE", "CRYPTO", "IP_ADDRESS", "US_PASSPORT", "US_DRIVER_LICENSE", "US_BANK_NUMBER"}
+PRESIDIO_IDENTIFYING = {
+    "PERSON",
+    "EMAIL_ADDRESS",
+    "PHONE_NUMBER",
+    "CREDIT_CARD",
+    "IBAN_CODE",
+    "US_SSN",
+    "UK_NHS",
+    "MEDICAL_LICENSE",
+    "CRYPTO",
+    "IP_ADDRESS",
+    "US_PASSPORT",
+    "US_DRIVER_LICENSE",
+    "US_BANK_NUMBER",
+}
 
 
 def score_presidio(texts: list[str], language: str) -> tuple[list[bool], list[bool]]:
@@ -132,8 +203,21 @@ def score_presidio(texts: list[str], language: str) -> tuple[list[bool], list[bo
     return any_hit, ident_hit
 
 
-GLINER_LABELS = ["person", "email", "phone number", "address", "date of birth", "credit card number", "iban",
-                 "medical condition", "diagnosis", "passport number", "api key", "password", "social security number"]
+GLINER_LABELS = [
+    "person",
+    "email",
+    "phone number",
+    "address",
+    "date of birth",
+    "credit card number",
+    "iban",
+    "medical condition",
+    "diagnosis",
+    "passport number",
+    "api key",
+    "password",
+    "social security number",
+]
 
 
 def score_gliner(texts: list[str], model_id: str) -> list[bool]:
@@ -146,21 +230,36 @@ def score_gliner(texts: list[str], model_id: str) -> list[bool]:
 def cmd_score(args: argparse.Namespace) -> int:
     rows = load(args.data)
     texts = [r.text for r in rows]
-    out = {"data": str(args.data), "n": len(rows), "when": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "language": args.language,
-           "ids": [r.id for r in rows], "labels": [r.label for r in rows], "slices": [r.slice for r in rows], "systems": {}}
+    out = {
+        "data": str(args.data),
+        "n": len(rows),
+        "when": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "language": args.language,
+        "ids": [r.id for r in rows],
+        "labels": [r.label for r in rows],
+        "slices": [r.slice for r in rows],
+        "systems": {},
+    }
     for system in args.systems.split(","):
         started = time.time()
         if system == "head":
             scores = score_head(texts, args.backend, args.url, args.batch)
             threshold = Gate.load(embedder=backends.make_embedder("ollama")).threshold
-            out["systems"]["head"] = {"scores": scores, "holds": [s > threshold for s in scores], "threshold": threshold,
-                                      "backend": args.backend}
+            out["systems"]["head"] = {
+                "scores": scores,
+                "holds": [s > threshold for s in scores],
+                "threshold": threshold,
+                "backend": args.backend,
+            }
         elif system == "presidio":
             any_hit, ident_hit = score_presidio(texts, args.language)
             out["systems"]["presidio_all"] = {"holds": any_hit}
             out["systems"]["presidio_identifying"] = {"holds": ident_hit}
         elif system == "gliner":
-            out["systems"]["gliner_pii"] = {"holds": score_gliner(texts, args.gliner_model), "model": args.gliner_model}
+            out["systems"]["gliner_pii"] = {
+                "holds": score_gliner(texts, args.gliner_model),
+                "model": args.gliner_model,
+            }
         else:
             raise SystemExit(f"unknown system {system}")
         seconds = time.time() - started
@@ -175,6 +274,7 @@ def cmd_score(args: argparse.Namespace) -> int:
 
 # ---- report ----------------------------------------------------------------------------------------------------
 
+
 def summarise(labels: list[str], slices: list[str], holds: list[bool]) -> dict:
     sensitive = [lab != "CLEAN" for lab in labels]
     by_slice: dict[str, dict] = {}
@@ -182,14 +282,20 @@ def summarise(labels: list[str], slices: list[str], holds: list[bool]) -> dict:
         idx = [i for i, s in enumerate(slices) if s == name]
         pos = [i for i in idx if sensitive[i]]
         neg = [i for i in idx if not sensitive[i]]
-        by_slice[name] = {"n": len(idx),
-                          "catch": round(sum(holds[i] for i in pos) / len(pos), 3) if pos else None,
-                          "friction": round(sum(holds[i] for i in neg) / len(neg), 3) if neg else None}
+        by_slice[name] = {
+            "n": len(idx),
+            "catch": round(sum(holds[i] for i in pos) / len(pos), 3) if pos else None,
+            "friction": round(sum(holds[i] for i in neg) / len(neg), 3) if neg else None,
+        }
     pos = [i for i, s in enumerate(sensitive) if s]
     neg = [i for i, s in enumerate(sensitive) if not s]
-    return {"catch": round(sum(holds[i] for i in pos) / len(pos), 3) if pos else None,
-            "friction": round(sum(holds[i] for i in neg) / len(neg), 3) if neg else None,
-            "n_sensitive": len(pos), "n_clean": len(neg), "slices": by_slice}
+    return {
+        "catch": round(sum(holds[i] for i in pos) / len(pos), 3) if pos else None,
+        "friction": round(sum(holds[i] for i in neg) / len(neg), 3) if neg else None,
+        "n_sensitive": len(pos),
+        "n_clean": len(neg),
+        "slices": by_slice,
+    }
 
 
 def cmd_report(args: argparse.Namespace) -> int:
@@ -202,9 +308,15 @@ def cmd_report(args: argparse.Namespace) -> int:
     # The compositions the design intends: the head only ever adds a hold behind the rules, and beside an
     # entity tool it covers what that tool cannot see.
     if "head" in systems and "regex_rules" in systems:
-        systems["rules+head"] = {"holds": [a or b for a, b in zip(systems["regex_rules"]["holds"], systems["head"]["holds"])]}
+        systems["rules+head"] = {
+            "holds": [a or b for a, b in zip(systems["regex_rules"]["holds"], systems["head"]["holds"])]
+        }
     if "head" in systems and "presidio_identifying" in systems:
-        systems["presidio_identifying+head"] = {"holds": [a or b for a, b in zip(systems["presidio_identifying"]["holds"], systems["head"]["holds"])]}
+        systems["presidio_identifying+head"] = {
+            "holds": [
+                a or b for a, b in zip(systems["presidio_identifying"]["holds"], systems["head"]["holds"])
+            ]
+        }
     summaries = {name: summarise(labels, slices, sys_["holds"]) for name, sys_ in systems.items()}
     head_auc = None
     fixed = {}
@@ -219,10 +331,15 @@ def cmd_report(args: argparse.Namespace) -> int:
             k = int(friction * len(neg))
             cut = neg[k] if k < len(neg) else neg[-1]
             fixed[friction] = round(sum(1 for s in pos if s > cut) / max(1, len(pos)), 3)
-        print(f"\nhead: catch at 5 % friction {fixed[0.05]}, at 10 % friction {fixed[0.10]} (threshold moved for this set only)")
+        print(
+            f"\nhead: catch at 5 % friction {fixed[0.05]}, at 10 % friction {fixed[0.10]} "
+            "(threshold moved for this set only)"
+        )
     names = list(summaries)
-    print(f"\n### {Path(run['data']).name}: {run['n']} rows, {summaries[names[0]]['n_sensitive']} sensitive, "
-          f"{summaries[names[0]]['n_clean']} clean\n")
+    print(
+        f"\n### {Path(run['data']).name}: {run['n']} rows, {summaries[names[0]]['n_sensitive']} sensitive, "
+        f"{summaries[names[0]]['n_clean']} clean\n"
+    )
     print("| System | Catch | Friction | AUC | ms per text |")
     print("|---|---|---|---|---|")
     for name in names:
@@ -235,11 +352,24 @@ def cmd_report(args: argparse.Namespace) -> int:
         cells = []
         for name in names:
             s = summaries[name]["slices"][slice_name]
-            cells.append(f"{s['catch'] if s['catch'] is not None else '-'} / {s['friction'] if s['friction'] is not None else '-'}")
-        print(f"| {slice_name} | {summaries[names[0]]['slices'][slice_name]['n']} | " + " | ".join(cells) + " |")
+            catch = s["catch"] if s["catch"] is not None else "-"
+            friction = s["friction"] if s["friction"] is not None else "-"
+            cells.append(f"{catch} / {friction}")
+        print(
+            f"| {slice_name} | {summaries[names[0]]['slices'][slice_name]['n']} | " + " | ".join(cells) + " |"
+        )
     if args.out:
-        Path(args.out).write_text(json.dumps({"run": args.run, "head_auc": head_auc, "head_catch_at_friction": fixed,
-                                              "systems": summaries}, indent=1))
+        Path(args.out).write_text(
+            json.dumps(
+                {
+                    "run": args.run,
+                    "head_auc": head_auc,
+                    "head_catch_at_friction": fixed,
+                    "systems": summaries,
+                },
+                indent=1,
+            )
+        )
     return 0
 
 
@@ -253,13 +383,17 @@ def cmd_convert(args: argparse.Namespace) -> int:
     with open(args.out, "w") as handle:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
-    print(f"{len(rows)} rows -> {args.out}; labels {dict(Counter(r['label'] for r in rows))}; "
-          f"slices {len(set(r['slice'] for r in rows))}")
+    print(
+        f"{len(rows)} rows -> {args.out}; labels {dict(Counter(r['label'] for r in rows))}; "
+        f"slices {len(set(r['slice'] for r in rows))}"
+    )
     return 0
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     sub = parser.add_subparsers(dest="command", required=True)
     c = sub.add_parser("convert")
     c.add_argument("--openshift")

@@ -44,7 +44,9 @@ class Decision:
     value_hashes: list[str] = field(default_factory=list)
     override: list[str] = field(default_factory=list)
     refused_override: list[str] = field(default_factory=list)
-    shadow_rules: list[str] = field(default_factory=list)  # fired but not enforced (shadow, combination in lite)
+    shadow_rules: list[str] = field(
+        default_factory=list
+    )  # fired but not enforced (shadow, combination in lite)
     ruleset_sha256: str = ""
     detectors: dict[str, float] = field(default_factory=dict)
     guard_ms: float = 0.0
@@ -63,12 +65,25 @@ class Decision:
     def audit_record(self) -> dict[str, Any]:
         """The audit line of design section 8."""
         return {
-            "ts": self.ts, "decision_id": self.decision_id, "provider": self.provider, "wire": self.wire,
-            "mode": self.mode, "action": self.action, "would_action": self.would_action, "rules": self.rules,
-            "categories": self.categories, "paths": self.paths, "value_hashes": self.value_hashes,
-            "override": self.override, "refused_override": self.refused_override, "shadow_rules": self.shadow_rules,
-            "ruleset": self.ruleset_sha256[:8], "detectors": {k: round(v, 3) for k, v in self.detectors.items()},
-            "guard_ms": round(self.guard_ms, 3), "fail_closed": self.fail_closed, "reason": self.reason,
+            "ts": self.ts,
+            "decision_id": self.decision_id,
+            "provider": self.provider,
+            "wire": self.wire,
+            "mode": self.mode,
+            "action": self.action,
+            "would_action": self.would_action,
+            "rules": self.rules,
+            "categories": self.categories,
+            "paths": self.paths,
+            "value_hashes": self.value_hashes,
+            "override": self.override,
+            "refused_override": self.refused_override,
+            "shadow_rules": self.shadow_rules,
+            "ruleset": self.ruleset_sha256[:8],
+            "detectors": {k: round(v, 3) for k, v in self.detectors.items()},
+            "guard_ms": round(self.guard_ms, 3),
+            "fail_closed": self.fail_closed,
+            "reason": self.reason,
         }
 
 
@@ -77,8 +92,13 @@ def _open_private(path: Path, flags: int) -> int:
 
 
 class AuditWriter:
-    def __init__(self, path: str | Path, key_path: str | Path | None = None, max_bytes: int = MAX_BYTES,
-                 keep: int = KEEP) -> None:
+    def __init__(
+        self,
+        path: str | Path,
+        key_path: str | Path | None = None,
+        max_bytes: int = MAX_BYTES,
+        keep: int = KEEP,
+    ) -> None:
         self.path = Path(path).expanduser()
         self.key_path = Path(key_path).expanduser() if key_path else self.path.with_name("audit.key")
         self.max_bytes = max_bytes
@@ -92,7 +112,9 @@ class AuditWriter:
             fd = _open_private(self.key_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
         except FileExistsError:
             if self.key_path.stat().st_mode & 0o077:
-                raise PermissionError(f"{self.key_path} is readable by others; it must be mode 0600") from None
+                raise PermissionError(
+                    f"{self.key_path} is readable by others; it must be mode 0600"
+                ) from None
             return bytes.fromhex(self.key_path.read_text().strip())
         key = os.urandom(32)
         with os.fdopen(fd, "w") as handle:

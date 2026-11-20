@@ -29,6 +29,7 @@ import math
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
+from typing import Any
 
 from . import backends, ollama
 from .head import Model
@@ -73,7 +74,7 @@ class Gate:
         embedder: backends.Embedder | None = None,
         head_path: Path | None = None,
         head_sha256: str | None = None,
-        meta: dict | None = None,
+        meta: dict[str, Any] | None = None,
     ) -> None:
         self.model = model
         self.threshold = threshold

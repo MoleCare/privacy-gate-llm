@@ -1,0 +1,35 @@
+# pre-commit install   (once per clone; the dev dependency group carries pre-commit itself)
+# pre-commit run --all-files
+#
+# Revisions are pinned by commit SHA, like the actions in .github/workflows; the tag is in the comment.
+# The ruff hook's tag must match the ruff pin in pyproject.toml's dev group, or the hook and CI disagree.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 9026c9127e153371d7a78dfcb0c45ae2046a3d10  # frozen: v0.17.6
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+        # Generated and measured files are written byte for byte by their tools; their hashes are checked.
+        exclude: ^(src/privacy_gate/guard/privacy-v2\.json|rules/.*\.json|model/.*\.json|space-static/head-v1\.json|space(-static)?/explorer/data\.json|data/)
+      - id: trailing-whitespace
+        exclude: ^(src/privacy_gate/guard/privacy-v2\.json|rules/.*\.json|model/.*\.json|space-static/head-v1\.json|space(-static)?/explorer/data\.json|data/)
+        args: [--markdown-linebreak-ext=md]
+      - id: check-yaml
+
+  - repo: local
+    hooks:
+      # The same check the guard-rules CI job runs: the compiled rules and the conformance suite must match
+      # rules/privacy-v2.yaml, every regex must be RE2-portable and every fixture must pass.
+      - id: build-rules-check
+        name: guard rules are compiled and every fixture passes
+        entry: python scripts/build_rules.py --check
+        language: python
+        additional_dependencies: [pyyaml==6.0.2]
+        files: ^(rules/|src/privacy_gate/guard/|scripts/build_rules\.py)
+        pass_filenames: false

@@ -29,8 +29,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from privacy_gate.dataset import load  # noqa: E402
-from privacy_gate.gate import Gate  # noqa: E402
+from privacy_gate.dataset import load
+from privacy_gate.gate import Gate
 
 #: Sizes that matter, taken from the gold set rather than invented. A one-line
 #: prompt and a whole support queue are both real inputs, and they do not cost
@@ -118,10 +118,14 @@ def main() -> int:
     print("| text size | n | median chars | p50 | p95 | max |")
     print("|---|---|---|---|---|---|")
     for name, row in results.items():
-        print(f"| {name} | {row['n']} | {row['chars_median']:.0f} | "
-              f"{row['p50_ms']:.0f} ms | {row['p95_ms']:.0f} ms | {row['max_ms']:.0f} ms |")
-    print(f"\nBatched: {len(batch)} texts in one call, "
-          f"{batched_ms:.0f} ms total, {batched_ms / len(batch):.0f} ms each.")
+        print(
+            f"| {name} | {row['n']} | {row['chars_median']:.0f} | "
+            f"{row['p50_ms']:.0f} ms | {row['p95_ms']:.0f} ms | {row['max_ms']:.0f} ms |"
+        )
+    print(
+        f"\nBatched: {len(batch)} texts in one call, "
+        f"{batched_ms:.0f} ms total, {batched_ms / len(batch):.0f} ms each."
+    )
 
     if args.out:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)

@@ -19,9 +19,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from privacy_gate.dataset import load  # noqa: E402
-from privacy_gate.gate import Gate  # noqa: E402
-from privacy_gate.labels import holds  # noqa: E402
+from privacy_gate.dataset import load
+from privacy_gate.gate import Gate
+from privacy_gate.labels import holds
 
 
 def main() -> int:
@@ -38,8 +38,16 @@ def main() -> int:
 
     rows = []
     for e, d in zip(examples, decisions):
-        rows.append({"id": e.id, "label": e.label, "slice": e.slice, "text": e.text,
-                     "score": round(d.score, 4), "hold": d.hold})
+        rows.append(
+            {
+                "id": e.id,
+                "label": e.label,
+                "slice": e.slice,
+                "text": e.text,
+                "score": round(d.score, 4),
+                "hold": d.hold,
+            }
+        )
     sensitive = [r for r in rows if holds(r["label"])]
     clean = [r for r in rows if not holds(r["label"])]
     caught = sum(r["hold"] for r in sensitive)
@@ -48,16 +56,28 @@ def main() -> int:
     print(f"{Path(args.head).name} on {Path(args.data).name} (threshold {gate.threshold:+.4f})")
     for r in sorted(rows, key=lambda r: -r["score"]):
         wrong = r["hold"] != holds(r["label"])
-        print(f"  {'HOLD' if r['hold'] else 'send'} {r['score']:+7.2f}  {r['label']:6}  {r['text'][:60]}{'   <-- wrong' if wrong else ''}")
+        verdict = "HOLD" if r["hold"] else "send"
+        marker = "   <-- wrong" if wrong else ""
+        print(f"  {verdict} {r['score']:+7.2f}  {r['label']:6}  {r['text'][:60]}{marker}")
     print(f"catch {caught}/{len(sensitive)} | friction {friction}/{len(clean)}")
 
     if args.out:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-        Path(args.out).write_text(json.dumps({
-            "head": args.head, "data": args.data, "threshold": gate.threshold,
-            "caught": caught, "sensitive": len(sensitive),
-            "friction": friction, "clean": len(clean), "rows": rows,
-        }, indent=2))
+        Path(args.out).write_text(
+            json.dumps(
+                {
+                    "head": args.head,
+                    "data": args.data,
+                    "threshold": gate.threshold,
+                    "caught": caught,
+                    "sensitive": len(sensitive),
+                    "friction": friction,
+                    "clean": len(clean),
+                    "rows": rows,
+                },
+                indent=2,
+            )
+        )
     return 0
 
 

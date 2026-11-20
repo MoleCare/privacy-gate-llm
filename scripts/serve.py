@@ -14,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from privacy_gate.cli import main  # noqa: E402
+from privacy_gate.cli import main
 
 if __name__ == "__main__":
     sys.exit(main(["serve", *sys.argv[1:]]))

@@ -97,8 +97,8 @@ def _rewrite(text: str) -> tuple[str, list[int], list[int]] | None:
 def _unescape(run: str) -> str | None:
     try:
         if run.startswith("%"):
-            return bytes(int(run[i + 1:i + 3], 16) for i in range(0, len(run), 3)).decode("utf-8")
-        units = [int(run[i + 2:i + 6], 16) for i in range(0, len(run), 6)]
+            return bytes(int(run[i + 1 : i + 3], 16) for i in range(0, len(run), 3)).decode("utf-8")
+        units = [int(run[i + 2 : i + 6], 16) for i in range(0, len(run), 6)]
         return "".join(chr(u) for u in units).encode("utf-16", "surrogatepass").decode("utf-16")
     except (UnicodeDecodeError, ValueError):
         return None
@@ -116,7 +116,9 @@ def _decode(run: str, is_hex: bool) -> str | None:
             body = run.rstrip("=")
             alphabet_url = "-" in body or "_" in body
             padded = body + "=" * (-len(body) % 4)
-            raw = base64.urlsafe_b64decode(padded) if alphabet_url else base64.b64decode(padded, validate=True)
+            raw = (
+                base64.urlsafe_b64decode(padded) if alphabet_url else base64.b64decode(padded, validate=True)
+            )
         text = raw.decode("utf-8")
     except (binascii.Error, ValueError, UnicodeDecodeError):
         return None

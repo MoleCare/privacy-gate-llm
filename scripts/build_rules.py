@@ -27,7 +27,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from privacy_gate.guard.rules import Rule, RulesError, Ruleset
+from privacy_gate.guard.rules import Rule, RulesError, Ruleset  # noqa: E402  (needs the sys.path line above)
 
 SOURCE = ROOT / "rules" / "privacy-v2.yaml"
 COMPILED = ROOT / "src" / "privacy_gate" / "guard" / "privacy-v2.json"
@@ -43,7 +43,11 @@ def fixture_text(item: Any, where: str) -> str:
         unknown = set(item) - {"prefix", "repeat", "times", "suffix"}
         if unknown or "repeat" not in item or "times" not in item:
             raise RulesError(f"{where}: a mapping fixture is {{prefix, repeat, times, suffix}}")
-        return str(item.get("prefix", "")) + str(item["repeat"]) * int(item["times"]) + str(item.get("suffix", ""))
+        return (
+            str(item.get("prefix", ""))
+            + str(item["repeat"]) * int(item["times"])
+            + str(item.get("suffix", ""))
+        )
     raise RulesError(f"{where}: a fixture is a string or a mapping")
 
 
@@ -94,34 +98,62 @@ def build(source: dict[str, Any]) -> tuple[bytes, bytes]:
                     errors.append(f"{where}: expected {expected}, got {got} in {text[:80]!r}")
                 if kind == "fail":
                     fail_texts.append(text)
-                cases.append({"rule": rule.id, "category": rule.category, "kind": kind, "text": text,
-                              "spans": expected, "aliases": list(rule.aliases)})
+                cases.append(
+                    {
+                        "rule": rule.id,
+                        "category": rule.category,
+                        "kind": kind,
+                        "text": text,
+                        "spans": expected,
+                        "aliases": list(rule.aliases),
+                    }
+                )
         for pattern in rule.patterns:
-            alone = Rule(id=rule.id, title=rule.title, category=rule.category, patterns=(pattern,),
-                         validator=rule.validator, excepts=rule.excepts, except_values=rule.except_values,
-                         aliases=rule.aliases)
+            alone = Rule(
+                id=rule.id,
+                title=rule.title,
+                category=rule.category,
+                patterns=(pattern,),
+                validator=rule.validator,
+                excepts=rule.excepts,
+                except_values=rule.except_values,
+                aliases=rule.aliases,
+            )
             if not any(alone.spans(t) for t in fail_texts):
                 errors.append(f"{rule.id}: pattern {pattern.regex!r} is not exercised by any fail fixture")
     if errors:
         raise RulesError("fixtures failed:\n  " + "\n  ".join(errors))
 
     compiled = {k: v for k, v in source.items()}
-    compiled["note"] = ("Generated from rules/privacy-v2.yaml by scripts/build_rules.py. Do not edit by hand. "
-                        "Rationale and fixtures live in the source; fixtures are in rules/conformance.v2.json.")
+    compiled["note"] = (
+        "Generated from rules/privacy-v2.yaml by scripts/build_rules.py. Do not edit by hand. "
+        "Rationale and fixtures live in the source; fixtures are in rules/conformance.v2.json."
+    )
     compiled["source_sha256"] = hashlib.sha256(SOURCE.read_bytes()).hexdigest()
-    compiled["categories"] = {name: {k: v for k, v in spec.items() if k not in STRIPPED_KEYS}
-                              for name, spec in source["categories"].items()}
-    compiled["combination"] = {k: v for k, v in source.get("combination", {}).items() if k not in STRIPPED_KEYS}
-    compiled["rules"] = [{k: v for k, v in spec.items() if k not in STRIPPED_KEYS} for spec in source["rules"]]
+    compiled["categories"] = {
+        name: {k: v for k, v in spec.items() if k not in STRIPPED_KEYS}
+        for name, spec in source["categories"].items()
+    }
+    compiled["combination"] = {
+        k: v for k, v in source.get("combination", {}).items() if k not in STRIPPED_KEYS
+    }
+    compiled["rules"] = [
+        {k: v for k, v in spec.items() if k not in STRIPPED_KEYS} for spec in source["rules"]
+    ]
     compiled_bytes = (json.dumps(compiled, indent=2, ensure_ascii=True) + "\n").encode()
 
     conformance = {
         "schema": "privacy-gate-conformance/2",
-        "note": ("Generated from rules/privacy-v2.yaml by scripts/build_rules.py. Do not edit by hand. For each "
-                 "case, the rule alone, run on `text` with no normalisation, must report exactly `spans` "
-                 "([start, end) in Unicode code points, sorted, disjoint). `kind: pass` cases report none."),
-        "ruleset": {"id": ruleset.id, "version": ruleset.version,
-                    "sha256": hashlib.sha256(compiled_bytes).hexdigest()},
+        "note": (
+            "Generated from rules/privacy-v2.yaml by scripts/build_rules.py. Do not edit by hand. For each "
+            "case, the rule alone, run on `text` with no normalisation, must report exactly `spans` "
+            "([start, end) in Unicode code points, sorted, disjoint). `kind: pass` cases report none."
+        ),
+        "ruleset": {
+            "id": ruleset.id,
+            "version": ruleset.version,
+            "sha256": hashlib.sha256(compiled_bytes).hexdigest(),
+        },
         "cases": cases,
     }
     conformance_bytes = (json.dumps(conformance, indent=1, ensure_ascii=True) + "\n").encode()
@@ -130,7 +162,9 @@ def build(source: dict[str, Any]) -> tuple[bytes, bytes]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--check", action="store_true", help="fail if the generated files are stale; write nothing")
+    parser.add_argument(
+        "--check", action="store_true", help="fail if the generated files are stale; write nothing"
+    )
     args = parser.parse_args(argv)
     import yaml  # development dependency only: `uv run --with pyyaml==6.0.2`
 
@@ -146,8 +180,10 @@ def main(argv: list[str] | None = None) -> int:
         if stale:
             print(f"build_rules: stale, re-run scripts/build_rules.py: {', '.join(stale)}", file=sys.stderr)
             return 1
-        print(f"build_rules: up to date, {len(source['rules'])} rules, "
-              f"{len(json.loads(conformance)['cases'])} conformance cases")
+        print(
+            f"build_rules: up to date, {len(source['rules'])} rules, "
+            f"{len(json.loads(conformance)['cases'])} conformance cases"
+        )
         return 0
     for path, data in outputs:
         path.write_bytes(data)

@@ -19,16 +19,15 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import sys
 import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from privacy_gate import backends  # noqa: E402
-from privacy_gate.dataset import load  # noqa: E402
-from privacy_gate.gate import Gate  # noqa: E402
+from privacy_gate import backends
+from privacy_gate.dataset import load
+from privacy_gate.gate import Gate
 
 
 def parse_backend(spec: str) -> tuple[str, str | None, str | None]:
@@ -46,19 +45,24 @@ def cosine(a: list[float], b: list[float]) -> float:
 def scores_for(gate: Gate, texts: list[str], batch: int) -> tuple[list[list[float]], float]:
     vectors, started = [], time.time()
     for start in range(0, len(texts), batch):
-        vectors += gate.embedder.embed(texts[start:start + batch])
+        vectors += gate.embedder.embed(texts[start : start + batch])
     return vectors, time.time() - started
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--reference", default="ollama=http://127.0.0.1:11434")
     parser.add_argument("--against", action="append", default=[], help="repeatable")
     parser.add_argument("--data", default="data/gold.jsonl")
     parser.add_argument("--head", default=None, help="default: the bundled head")
     parser.add_argument("--batch", type=int, default=16)
-    parser.add_argument("--ollama-cpu", action="store_true",
-                        help="ollama backends: options.num_gpu = 0, so the run never evicts a chat model on a shared box")
+    parser.add_argument(
+        "--ollama-cpu",
+        action="store_true",
+        help="ollama backends: options.num_gpu = 0, so the run never evicts a chat model on a shared box",
+    )
     parser.add_argument("--out")
     args = parser.parse_args(argv)
 
@@ -70,39 +74,71 @@ def main(argv: list[str] | None = None) -> int:
         name, url, model = parse_backend(spec)
         embedder = backends.make_embedder(name, url, model)
         if name == "ollama" and args.ollama_cpu:
-            embedder = backends.OllamaEmbedder(url or backends.ollama.DEFAULT_URL, model or backends.DEFAULT_MODEL,
-                                               options={"num_gpu": 0})
+            embedder = backends.OllamaEmbedder(
+                url or backends.ollama.DEFAULT_URL, model or backends.DEFAULT_MODEL, options={"num_gpu": 0}
+            )
         gate = Gate.load(args.head, embedder=embedder)
         vectors, seconds = scores_for(gate, texts, args.batch)
         decisions = [gate._decide_vector(v) for v in vectors]
         holds = [d.hold for d in decisions]
         catch = sum(1 for h, s in zip(holds, sensitive) if h and s) / max(1, sum(sensitive))
-        friction = sum(1 for h, s in zip(holds, sensitive) if h and not s) / max(1, sum(1 for s in sensitive if not s))
-        return {"spec": spec, "backend": name, "seconds": round(seconds, 1), "per_text_ms": round(1000 * seconds / len(texts), 1),
-                "vectors": vectors, "scores": [d.score for d in decisions], "holds": holds,
-                "catch": round(catch, 4), "friction": round(friction, 4), "threshold": gate.threshold}
+        friction = sum(1 for h, s in zip(holds, sensitive) if h and not s) / max(
+            1, sum(1 for s in sensitive if not s)
+        )
+        return {
+            "spec": spec,
+            "backend": name,
+            "seconds": round(seconds, 1),
+            "per_text_ms": round(1000 * seconds / len(texts), 1),
+            "vectors": vectors,
+            "scores": [d.score for d in decisions],
+            "holds": holds,
+            "catch": round(catch, 4),
+            "friction": round(friction, 4),
+            "threshold": gate.threshold,
+        }
 
     reference = run(args.reference)
-    print(f"reference {reference['spec']}: catch {reference['catch']}, friction {reference['friction']}, "
-          f"{reference['per_text_ms']} ms per text")
-    report = {"data": args.data, "n": len(examples), "when": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-              "reference": {k: v for k, v in reference.items() if k != "vectors"}, "against": []}
+    print(
+        f"reference {reference['spec']}: catch {reference['catch']}, friction {reference['friction']}, "
+        f"{reference['per_text_ms']} ms per text"
+    )
+    report = {
+        "data": args.data,
+        "n": len(examples),
+        "when": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "reference": {k: v for k, v in reference.items() if k != "vectors"},
+        "against": [],
+    }
     for spec in args.against:
         other = run(spec)
         same = sum(1 for a, b in zip(reference["holds"], other["holds"]) if a == b)
-        differ = [{"id": e.id, "label": e.label, "reference_score": round(a, 4), "score": round(b, 4)}
-                  for e, a, b, ha, hb in zip(examples, reference["scores"], other["scores"], reference["holds"], other["holds"]) if ha != hb]
+        differ = [
+            {"id": e.id, "label": e.label, "reference_score": round(a, 4), "score": round(b, 4)}
+            for e, a, b, ha, hb in zip(
+                examples, reference["scores"], other["scores"], reference["holds"], other["holds"]
+            )
+            if ha != hb
+        ]
         deltas = [abs(a - b) for a, b in zip(reference["scores"], other["scores"])]
         cosines = [cosine(a, b) for a, b in zip(reference["vectors"], other["vectors"])]
-        summary = {**{k: v for k, v in other.items() if k != "vectors"},
-                   "same_verdict": same, "same_verdict_share": round(same / len(examples), 4), "differ": differ,
-                   "max_score_delta": round(max(deltas), 4), "median_score_delta": round(sorted(deltas)[len(deltas) // 2], 4),
-                   "min_cosine": round(min(cosines), 5), "median_cosine": round(sorted(cosines)[len(cosines) // 2], 5)}
+        summary = {
+            **{k: v for k, v in other.items() if k != "vectors"},
+            "same_verdict": same,
+            "same_verdict_share": round(same / len(examples), 4),
+            "differ": differ,
+            "max_score_delta": round(max(deltas), 4),
+            "median_score_delta": round(sorted(deltas)[len(deltas) // 2], 4),
+            "min_cosine": round(min(cosines), 5),
+            "median_cosine": round(sorted(cosines)[len(cosines) // 2], 5),
+        }
         report["against"].append(summary)
-        print(f"{spec}: same verdict on {same} of {len(examples)} ({summary['same_verdict_share']:.1%}); "
-              f"catch {other['catch']}, friction {other['friction']}; score delta median {summary['median_score_delta']} "
-              f"max {summary['max_score_delta']}; cosine min {summary['min_cosine']} median {summary['median_cosine']}; "
-              f"{other['per_text_ms']} ms per text")
+        print(
+            f"{spec}: same verdict on {same} of {len(examples)} ({summary['same_verdict_share']:.1%}); "
+            f"catch {other['catch']}, friction {other['friction']}; score delta median {summary['median_score_delta']} "
+            f"max {summary['max_score_delta']}; cosine min {summary['min_cosine']} median {summary['median_cosine']}; "
+            f"{other['per_text_ms']} ms per text"
+        )
         for d in differ:
             print(f"   differs: {d['id']} {d['label']}: reference {d['reference_score']} vs {d['score']}")
     if args.out:

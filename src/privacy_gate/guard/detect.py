@@ -38,9 +38,13 @@ class Finding:
     encoded: bool = False
 
 
-def detect(text: str, ruleset: Ruleset, layers: Iterable[str] = ("L0", "L1"),
-           detectors: dict[str, Detector] | None = None,
-           timings: dict[str, float] | None = None) -> list[Finding]:
+def detect(
+    text: str,
+    ruleset: Ruleset,
+    layers: Iterable[str] = ("L0", "L1"),
+    detectors: dict[str, Detector] | None = None,
+    timings: dict[str, float] | None = None,
+) -> list[Finding]:
     """Every finding in `text`, overlaps resolved. Detector exceptions propagate: the caller holds the text."""
     layers = tuple(layers)
     found: list[Finding] = []
@@ -79,10 +83,15 @@ def resolve(findings: list[Finding], ruleset: Ruleset) -> list[Finding]:
         return ruleset.categories[f.category].action == "block"
 
     # The same span found on the text and on a view is one finding; the plain L1 one is kept (sorted last).
-    unique = {(f.category, f.rule_id, f.start, f.end): f for f in sorted(findings, key=lambda f: f.layer == "L1")}
+    unique = {
+        (f.category, f.rule_id, f.start, f.end): f for f in sorted(findings, key=lambda f: f.layer == "L1")
+    }
     blocks = sorted((f for f in unique.values() if is_block(f)), key=lambda f: (f.start, f.end, f.rule_id))
-    masks = [f for f in unique.values() if not is_block(f)
-             and not any(b.start < f.end and f.start < b.end for b in blocks)]
+    masks = [
+        f
+        for f in unique.values()
+        if not is_block(f) and not any(b.start < f.end and f.start < b.end for b in blocks)
+    ]
     masks.sort(key=lambda f: (-(f.end - f.start), f.start, f.rule_id))
     kept: list[Finding] = []
     for f in masks:

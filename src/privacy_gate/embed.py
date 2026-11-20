@@ -29,13 +29,12 @@ from .dataset import load
 DEFAULT_MODEL = "bge-m3"
 
 
-def embed(texts: list[str], model: str = DEFAULT_MODEL, *, url: str = ollama.DEFAULT_URL,
-          timeout: float = 900.0) -> list[list[float]]:
+def embed(
+    texts: list[str], model: str = DEFAULT_MODEL, *, url: str = ollama.DEFAULT_URL, timeout: float = 900.0
+) -> list[list[float]]:
     """Embed a batch. Ollama's /api/embed takes a list and returns them in order."""
-    body = ollama._post(
-        url, "/api/embed", {"model": model, "input": texts, "keep_alive": "30m"}, timeout
-    )
-    vectors = body.get("embeddings")
+    body = ollama._post(url, "/api/embed", {"model": model, "input": texts, "keep_alive": "30m"}, timeout)
+    vectors: list[list[float]] | None = body.get("embeddings")
     if not vectors or len(vectors) != len(texts):
         raise ollama.OllamaError(
             f"expected {len(texts)} embeddings, got {0 if not vectors else len(vectors)}"

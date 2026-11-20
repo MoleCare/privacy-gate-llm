@@ -34,9 +34,11 @@ from typing import Any
 try:
     from litellm.integrations.custom_guardrail import CustomGuardrail
 except ImportError:  # pragma: no cover - the proxy has it; the tests stub it
+
     class CustomGuardrail:  # type: ignore[no-redef]
         def __init__(self, **kwargs: Any) -> None:
             pass
+
 
 from privacy_gate import backends
 from privacy_gate.gate import Gate
@@ -72,7 +74,11 @@ class PrivacyGateGuardrail(CustomGuardrail):
             if isinstance(content, str):
                 out.append(content)
             elif isinstance(content, list):
-                out += [part.get("text", "") for part in content if isinstance(part, dict) and part.get("type") == "text"]
+                out += [
+                    part.get("text", "")
+                    for part in content
+                    if isinstance(part, dict) and part.get("type") == "text"
+                ]
             for call in message.get("tool_calls") or []:
                 args = (call.get("function") or {}).get("arguments")
                 if isinstance(args, str):
@@ -90,12 +96,24 @@ class PrivacyGateGuardrail(CustomGuardrail):
         try:
             decisions = self.gate.decide_many(texts)
         except Exception as error:  # noqa: BLE001 - unreachable encoder: fail closed
-            return {"hold": True, "scored": 0, "error": f"{type(error).__name__}: {str(error)[:120]}", "reason": "gate unavailable, failing closed"}
+            return {
+                "hold": True,
+                "scored": 0,
+                "error": f"{type(error).__name__}: {str(error)[:120]}",
+                "reason": "gate unavailable, failing closed",
+            }
         worst = max(decisions, key=lambda d: d.score)
-        return {"hold": any(d.hold for d in decisions), "scored": len(texts), "score": round(worst.score, 4),
-                "margin": round(worst.margin, 4), "threshold": round(worst.threshold, 4)}
+        return {
+            "hold": any(d.hold for d in decisions),
+            "scored": len(texts),
+            "score": round(worst.score, 4),
+            "margin": round(worst.margin, 4),
+            "threshold": round(worst.threshold, 4),
+        }
 
-    async def async_pre_call_hook(self, user_api_key_dict: Any, cache: Any, data: dict, call_type: Any) -> dict:
+    async def async_pre_call_hook(
+        self, user_api_key_dict: Any, cache: Any, data: dict, call_type: Any
+    ) -> dict:
         result = self.verdict(data)
         data.setdefault("metadata", {})["privacy_gate"] = result
         if not result["hold"]:

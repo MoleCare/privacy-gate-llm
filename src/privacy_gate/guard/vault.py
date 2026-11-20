@@ -60,13 +60,17 @@ class Vault:
             if known is not None:
                 return known
             for bump in range(_MAX_BUMPS):
-                candidate = make_surrogate(self._mac(category, value, bump), kind, label, value, fallback=False)
+                candidate = make_surrogate(
+                    self._mac(category, value, bump), kind, label, value, fallback=False
+                )
                 if candidate is not None and candidate not in self._by_surrogate:
                     break
             else:
                 bump = _MAX_BUMPS
                 while True:  # tags: 30 bits each, so this ends almost at once
-                    candidate = make_surrogate(self._mac(category, value, bump), kind, label, value, fallback=True)
+                    candidate = make_surrogate(
+                        self._mac(category, value, bump), kind, label, value, fallback=True
+                    )
                     if candidate is not None and candidate not in self._by_surrogate:
                         break
                     bump += 1
@@ -112,7 +116,9 @@ def make_surrogate(mac: bytes, kind: str, label: str, value: str, fallback: bool
 class SessionStore:
     """Vaults by (caller, session), each expiring after `idle_seconds` without use. The clock is injectable."""
 
-    def __init__(self, idle_seconds: float = IDLE_SECONDS, clock: Callable[[], float] = time.monotonic) -> None:
+    def __init__(
+        self, idle_seconds: float = IDLE_SECONDS, clock: Callable[[], float] = time.monotonic
+    ) -> None:
         self._key = os.urandom(32)
         self._idle = idle_seconds
         self._clock = clock

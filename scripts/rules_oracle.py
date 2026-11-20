@@ -30,7 +30,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from privacy_gate.dataset import load  # noqa: E402
+from privacy_gate.dataset import load
 
 
 def privacy_verdict(text: str) -> tuple[bool, str | None]:
@@ -75,9 +75,7 @@ def main() -> int:
             rule_of[example.id] = rule
 
     Path(args.out).write_text(json.dumps(matched, indent=2, sort_keys=True) + "\n")
-    Path(args.out).with_suffix(".rules.json").write_text(
-        json.dumps(rule_of, indent=2, sort_keys=True) + "\n"
-    )
+    Path(args.out).with_suffix(".rules.json").write_text(json.dumps(rule_of, indent=2, sort_keys=True) + "\n")
     print(f"{sum(matched.values())}/{len(matched)} matched a privacy rule -> {args.out}")
     return 0
 

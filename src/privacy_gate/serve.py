@@ -27,6 +27,7 @@ from __future__ import annotations
 import json
 import logging
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from typing import Any
 
 from .gate import Gate
 
@@ -40,7 +41,9 @@ log = logging.getLogger(__name__)
 class SidecarServer(ThreadingHTTPServer):
     """The threading server with the one setting the handler reads: whether to log request lines."""
 
-    def __init__(self, address: tuple[str, int], handler: type[BaseHTTPRequestHandler], verbose: bool = False) -> None:
+    def __init__(
+        self, address: tuple[str, int], handler: type[BaseHTTPRequestHandler], verbose: bool = False
+    ) -> None:
         self.verbose = verbose
         super().__init__(address, handler)
 
@@ -53,7 +56,7 @@ def make_handler(gate: Gate) -> type[BaseHTTPRequestHandler]:
         def _error(self, status: int, code: str, message: str, **extra: object) -> None:
             self._send(status, {"error": message, "code": code, **extra})
 
-        def _send(self, status: int, payload: dict) -> None:
+        def _send(self, status: int, payload: dict[str, Any]) -> None:
             body = json.dumps(payload).encode()
             self.send_response(status)
             self.send_header("content-type", "application/json")
@@ -103,7 +106,9 @@ def make_handler(gate: Gate) -> type[BaseHTTPRequestHandler]:
                 self._error(400, "bad_json", "body must be JSON")
                 return
             if not isinstance(request, dict):
-                self._error(400, "bad_request", 'body must be a JSON object: {"text": "..."} or {"texts": [...]}')
+                self._error(
+                    400, "bad_request", 'body must be a JSON object: {"text": "..."} or {"texts": [...]}'
+                )
                 return
 
             texts = request.get("texts")
@@ -156,10 +161,16 @@ def make_handler(gate: Gate) -> type[BaseHTTPRequestHandler]:
 def serve(gate: Gate, host: str = "127.0.0.1", port: int = DEFAULT_PORT, verbose: bool = False) -> None:
     server = SidecarServer((host, port), make_handler(gate), verbose=verbose)
     if host not in ("127.0.0.1", "localhost", "::1"):
-        print(f"WARNING: bound to {host}: this sidecar has no authentication. Anything that can reach it can "
-              "submit text and read the verdict.", flush=True)
-    print(f"privacy-gate: {gate.embedder.name} backend, {gate.embedding_model}, threshold {gate.threshold}, "
-          f"listening on http://{host}:{port} (POST /check, GET /health)", flush=True)
+        print(
+            f"WARNING: bound to {host}: this sidecar has no authentication. Anything that can reach it can "
+            "submit text and read the verdict.",
+            flush=True,
+        )
+    print(
+        f"privacy-gate: {gate.embedder.name} backend, {gate.embedding_model}, threshold {gate.threshold}, "
+        f"listening on http://{host}:{port} (POST /check, GET /health)",
+        flush=True,
+    )
     try:
         server.serve_forever()
     except KeyboardInterrupt:

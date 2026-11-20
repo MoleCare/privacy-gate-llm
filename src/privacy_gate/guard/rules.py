@@ -99,11 +99,11 @@ class Pattern:
 class Category:
     name: str
     title: str
-    action: str           # the shipped default: block or mask
-    overridable: bool     # False: no policy, header or marker may loosen it
-    surrogate: str        # how a masked value is written; "none" for block categories
+    action: str  # the shipped default: block or mask
+    overridable: bool  # False: no policy, header or marker may loosen it
+    surrogate: str  # how a masked value is written; "none" for block categories
     layers: tuple[str, ...]
-    label: str = ""       # the word in a tag surrogate: <IBAN_7qk2fa>
+    label: str = ""  # the word in a tag surrogate: <IBAN_7qk2fa>
 
 
 @dataclass(frozen=True)
@@ -146,10 +146,31 @@ class Rule:
 
 
 _CATEGORY_KEYS = {"title", "action", "overridable", "surrogate", "layers", "label", "rationale"}
-_RULE_KEYS = {"id", "title", "category", "patterns", "validator", "except", "except_values", "aliases",
-              "rationale", "fixtures"}
-_TOP_KEYS = {"schema", "id", "version", "updated", "note", "source_sha256", "seeded_from", "categories",
-             "profiles", "combination", "rules"}
+_RULE_KEYS = {
+    "id",
+    "title",
+    "category",
+    "patterns",
+    "validator",
+    "except",
+    "except_values",
+    "aliases",
+    "rationale",
+    "fixtures",
+}
+_TOP_KEYS = {
+    "schema",
+    "id",
+    "version",
+    "updated",
+    "note",
+    "source_sha256",
+    "seeded_from",
+    "categories",
+    "profiles",
+    "combination",
+    "rules",
+}
 _ID = re.compile(r"PG-[A-Z0-9]+-\d{3}")
 # Ids older engines and downstream readers already use (llm-harness PRIV001-005). Reported beside the
 # rule id, never instead of it, so headers, audit lines and dashboards keyed on them keep working.
@@ -199,13 +220,24 @@ class Ruleset:
                 raise RulesError(f"profile {name}: unknown layer or combination mode")
         combination = data.get("combination", {})
         if combination:
-            _require(combination, {"rule_id", "min_distinct", "rationale"}, {"rule_id", "min_distinct"},
-                     "combination")
+            _require(
+                combination,
+                {"rule_id", "min_distinct", "rationale"},
+                {"rule_id", "min_distinct"},
+                "combination",
+            )
         if sha256 is None:
             canonical = json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
             sha256 = hashlib.sha256(canonical.encode()).hexdigest()
-        return cls(id=data["id"], version=str(data["version"]), sha256=sha256, categories=categories,
-                   rules=tuple(rules), profiles=profiles, combination=combination)
+        return cls(
+            id=data["id"],
+            version=str(data["version"]),
+            sha256=sha256,
+            categories=categories,
+            rules=tuple(rules),
+            profiles=profiles,
+            combination=combination,
+        )
 
     def rule(self, rule_id: str) -> Rule:
         for rule in self.rules:
@@ -223,8 +255,15 @@ class Ruleset:
             if rule.category not in self.categories:
                 raise RulesError(f"overlay rule {rule.id}: unknown category {rule.category!r}")
         combined = hashlib.sha256(f"{self.sha256}\n{overlay.sha256}".encode()).hexdigest()
-        return Ruleset(id=self.id, version=self.version, sha256=combined, categories=self.categories,
-                       rules=self.rules + overlay.rules, profiles=self.profiles, combination=self.combination)
+        return Ruleset(
+            id=self.id,
+            version=self.version,
+            sha256=combined,
+            categories=self.categories,
+            rules=self.rules + overlay.rules,
+            profiles=self.profiles,
+            combination=self.combination,
+        )
 
 
 def _category(name: str, spec: dict[str, Any]) -> Category:
@@ -244,9 +283,15 @@ def _category(name: str, spec: dict[str, Any]) -> Category:
         raise RulesError(f"{where}: a mask category needs a surrogate")
     if not spec["layers"] or not set(spec["layers"]) <= set(LAYERS):
         raise RulesError(f"{where}: layers must be a non-empty subset of {LAYERS}")
-    return Category(name=name, title=spec["title"], action=spec["action"], overridable=spec["overridable"],
-                    surrogate=spec["surrogate"], layers=tuple(spec["layers"]),
-                    label=str(spec.get("label") or name.upper()))
+    return Category(
+        name=name,
+        title=spec["title"],
+        action=spec["action"],
+        overridable=spec["overridable"],
+        surrogate=spec["surrogate"],
+        layers=tuple(spec["layers"]),
+        label=str(spec.get("label") or name.upper()),
+    )
 
 
 def _rule(spec: dict[str, Any], categories: dict[str, Category]) -> Rule:
@@ -280,5 +325,13 @@ def _rule(spec: dict[str, Any], categories: dict[str, Category]) -> Rule:
         raise RulesError(f"{where}: a rule cannot alias itself")
     excepts = tuple(_compile(e) for e in spec.get("except", []) or [])
     except_values = frozenset(_strip_separators(str(v)) for v in spec.get("except_values", []) or [])
-    return Rule(id=rule_id, title=spec["title"], category=spec["category"], patterns=tuple(patterns),
-                validator=validator, excepts=excepts, except_values=except_values, aliases=tuple(aliases))
+    return Rule(
+        id=rule_id,
+        title=spec["title"],
+        category=spec["category"],
+        patterns=tuple(patterns),
+        validator=validator,
+        excepts=excepts,
+        except_values=except_values,
+        aliases=tuple(aliases),
+    )

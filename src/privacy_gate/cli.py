@@ -23,18 +23,26 @@ import json
 import sys
 
 from . import backends
-from .gate import Gate
+from .gate import Decision, Gate
 
 EXIT_HOLD = 3
 
 
 def _add_backend_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--head", help="head file (default: the one shipped with this version)")
-    parser.add_argument("--backend", choices=backends.BACKENDS, default="ollama",
-                        help="where the embedding comes from (default: ollama)")
+    parser.add_argument(
+        "--backend",
+        choices=backends.BACKENDS,
+        default="ollama",
+        help="where the embedding comes from (default: ollama)",
+    )
     parser.add_argument("--url", help="the embedding endpoint (ollama and openai backends)")
-    parser.add_argument("--model", help="the embedding model name at that endpoint, or the Hugging Face id for local")
-    parser.add_argument("--api-key", help="openai backend: a bearer token (or PRIVACY_GATE_API_KEY in the environment)")
+    parser.add_argument(
+        "--model", help="the embedding model name at that endpoint, or the Hugging Face id for local"
+    )
+    parser.add_argument(
+        "--api-key", help="openai backend: a bearer token (or PRIVACY_GATE_API_KEY in the environment)"
+    )
 
 
 def _gate(args: argparse.Namespace) -> Gate:
@@ -42,10 +50,16 @@ def _gate(args: argparse.Namespace) -> Gate:
     return Gate.load(args.head, embedder=embedder)
 
 
-def _format(decision, as_json: bool) -> str:  # noqa: ANN001
+def _format(decision: Decision, as_json: bool) -> str:
     if as_json:
-        return json.dumps({"hold": decision.hold, "score": round(decision.score, 4),
-                           "threshold": round(decision.threshold, 4), "margin": round(decision.margin, 4)})
+        return json.dumps(
+            {
+                "hold": decision.hold,
+                "score": round(decision.score, 4),
+                "threshold": round(decision.threshold, 4),
+                "margin": round(decision.margin, 4),
+            }
+        )
     verdict = "hold" if decision.hold else "send"
     return f"{verdict}  score={decision.score:.4f} threshold={decision.threshold:.4f} margin={decision.margin:.4f}"
 
@@ -58,7 +72,10 @@ def cmd_check(args: argparse.Namespace) -> int:
     else:
         texts = [sys.stdin.read().strip()]
         if not texts[0]:
-            print("privacy-gate check: give text as an argument, on stdin, or --stdin for one per line", file=sys.stderr)
+            print(
+                "privacy-gate check: give text as an argument, on stdin, or --stdin for one per line",
+                file=sys.stderr,
+            )
             return 2
     try:
         gate = _gate(args)
@@ -91,12 +108,29 @@ def cmd_info(args: argparse.Namespace) -> int:
 
     gate = Gate.load(args.head, embedder=backends.make_embedder("ollama"))
     rules = Ruleset.load()
-    print(json.dumps({"head": str(gate.head_path), "head_sha256": gate.head_sha256, "threshold": gate.threshold,
-                      "embedding_model": gate.embedding_model, "dimensions": len(gate.model.weights),
-                      **{k: gate.meta[k] for k in ("trained_on", "cross_validated_auc", "embedding_model_hf") if k in gate.meta},
-                      "ruleset": {"id": rules.id, "version": rules.version, "sha256": rules.sha256,
-                                  "rules": len(rules.rules)}},
-                     indent=1))
+    print(
+        json.dumps(
+            {
+                "head": str(gate.head_path),
+                "head_sha256": gate.head_sha256,
+                "threshold": gate.threshold,
+                "embedding_model": gate.embedding_model,
+                "dimensions": len(gate.model.weights),
+                **{
+                    k: gate.meta[k]
+                    for k in ("trained_on", "cross_validated_auc", "embedding_model_hf")
+                    if k in gate.meta
+                },
+                "ruleset": {
+                    "id": rules.id,
+                    "version": rules.version,
+                    "sha256": rules.sha256,
+                    "rules": len(rules.rules),
+                },
+            },
+            indent=1,
+        )
+    )
     return 0
 
 
@@ -108,14 +142,18 @@ def build_parser() -> argparse.ArgumentParser:
     check.add_argument("text", nargs="*", help="the text (or give it on stdin)")
     check.add_argument("--stdin", action="store_true", help="one text per line on stdin")
     check.add_argument("--json", action="store_true", help="one JSON object per text")
-    check.add_argument("--fail-on-hold", action="store_true", help=f"exit {EXIT_HOLD} when any text must stay")
+    check.add_argument(
+        "--fail-on-hold", action="store_true", help=f"exit {EXIT_HOLD} when any text must stay"
+    )
     _add_backend_options(check)
     check.set_defaults(func=cmd_check)
 
     serve = sub.add_parser("serve", help="the loopback HTTP sidecar")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8231)
-    serve.add_argument("--verbose", action="store_true", help="log request lines (off by default, on purpose)")
+    serve.add_argument(
+        "--verbose", action="store_true", help="log request lines (off by default, on purpose)"
+    )
     _add_backend_options(serve)
     serve.set_defaults(func=cmd_serve)
 

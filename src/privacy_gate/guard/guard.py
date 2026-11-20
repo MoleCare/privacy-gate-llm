@@ -73,8 +73,15 @@ class Protected:
 
 
 class Guard:
-    def __init__(self, ruleset: Ruleset | None, policy: Policy | None, store: SessionStore,
-                 detectors: dict[str, Detector], limits: ScanLimits, failure: str | None) -> None:
+    def __init__(
+        self,
+        ruleset: Ruleset | None,
+        policy: Policy | None,
+        store: SessionStore,
+        detectors: dict[str, Detector],
+        limits: ScanLimits,
+        failure: str | None,
+    ) -> None:
         self.ruleset = ruleset
         self.policy = policy
         self.store = store
@@ -83,10 +90,17 @@ class Guard:
         self.failure = failure
 
     @classmethod
-    def load(cls, policy: str | Path | dict[str, Any] | Policy | None = None, profile: str | None = None, *,
-             ruleset: Ruleset | None = None, rules_path: str | Path | None = None,
-             store: SessionStore | None = None, detectors: dict[str, Detector] | None = None,
-             limits: ScanLimits = DEFAULT_LIMITS) -> Guard:
+    def load(
+        cls,
+        policy: str | Path | dict[str, Any] | Policy | None = None,
+        profile: str | None = None,
+        *,
+        ruleset: Ruleset | None = None,
+        rules_path: str | Path | None = None,
+        store: SessionStore | None = None,
+        detectors: dict[str, Detector] | None = None,
+        limits: ScanLimits = DEFAULT_LIMITS,
+    ) -> Guard:
         """Never raises: a guard that cannot load refuses every request and says why."""
         detectors = dict(detectors or {})
         store = store or SessionStore()
@@ -110,7 +124,9 @@ class Guard:
                 raise PolicyError(f"the rules have no profile {loaded.profile!r}")
             for layer in rules.profiles[loaded.profile]["layers"]:
                 if layer in ("L2", "L3") and layer not in detectors:
-                    raise PolicyError(f"profile {loaded.profile} needs the {layer} detector, which is not installed")
+                    raise PolicyError(
+                        f"profile {loaded.profile} needs the {layer} detector, which is not installed"
+                    )
         except (RulesError, PolicyError, OSError, ValueError, KeyError, TypeError) as error:
             return cls(None, None, store, detectors, limits, failure=f"{type(error).__name__}: {error}")
         return cls(rules, loaded, store, detectors, limits, failure=None)
@@ -118,11 +134,22 @@ class Guard:
     def vault(self, caller: str = "", session: str = "default") -> Vault:
         return self.store.vault(caller, session)
 
-    def unmasker(self, caller: str = "", session: str = "default", escape_json: bool = False) -> StreamUnmasker:
+    def unmasker(
+        self, caller: str = "", session: str = "default", escape_json: bool = False
+    ) -> StreamUnmasker:
         return StreamUnmasker(self.vault(caller, session), escape_json=escape_json)
 
-    def protect(self, body: Any, *, caller: str = "", session: str = "default", provider: str = "",
-                wire: str = "", overrides: str | None = None, hasher: Hasher | None = None) -> Protected:
+    def protect(
+        self,
+        body: Any,
+        *,
+        caller: str = "",
+        session: str = "default",
+        provider: str = "",
+        wire: str = "",
+        overrides: str | None = None,
+        hasher: Hasher | None = None,
+    ) -> Protected:
         started = time.perf_counter()
         decision = Decision(action="block", provider=provider, wire=wire)
         try:
@@ -135,7 +162,9 @@ class Guard:
             decision.ruleset_sha256 = self.ruleset.sha256
             return self._protect(body, decision, caller, session, provider, overrides, hasher)
         except (ScanLimitError, DecodeLimitError) as error:
-            _fail(decision, SCAN_RULE, SCAN_ALIAS, f"the body could not be read in full ({error}); nothing sent")
+            _fail(
+                decision, SCAN_RULE, SCAN_ALIAS, f"the body could not be read in full ({error}); nothing sent"
+            )
             return Protected(decision, None)
         except Exception as error:  # noqa: BLE001 - R9: whatever went wrong, nothing unread may leave
             _fail(decision, SCAN_RULE, SCAN_ALIAS, f"engine error ({type(error).__name__}); nothing sent")
@@ -143,8 +172,16 @@ class Guard:
         finally:
             decision.guard_ms = (time.perf_counter() - started) * 1000
 
-    def _protect(self, body: Any, decision: Decision, caller: str, session: str, provider: str,
-                 overrides: str | None, hasher: Hasher | None) -> Protected:
+    def _protect(
+        self,
+        body: Any,
+        decision: Decision,
+        caller: str,
+        session: str,
+        provider: str,
+        overrides: str | None,
+        hasher: Hasher | None,
+    ) -> Protected:
         rules, policy = self.ruleset, self.policy
         assert rules is not None and policy is not None
         layers = tuple(rules.profiles[policy.profile]["layers"])
@@ -164,14 +201,18 @@ class Guard:
                 continue
             text = unit.text
             if unit.is_string:
-                stripped, named = strip_markers(text[unit.value_offset:])
+                stripped, named = strip_markers(text[unit.value_offset :])
                 if named:
                     requested |= named
-                    text = text[:unit.value_offset] + stripped
+                    text = text[: unit.value_offset] + stripped
                     rewrites[unit.path] = stripped
-            per_unit.append((unit, text, [(f, "") for f in detect(text, rules, layers, self.detectors, timings)]))
+            per_unit.append(
+                (unit, text, [(f, "") for f in detect(text, rules, layers, self.detectors, timings)])
+            )
 
-        allowed_overrides = {c for c in requested if c in rules.categories and rules.categories[c].overridable}
+        allowed_overrides = {
+            c for c in requested if c in rules.categories and rules.categories[c].overridable
+        }
         decision.refused_override = sorted(requested - allowed_overrides)
         overridden: set[str] = set()
         to_mask: list[tuple[TextUnit, str, list[Finding]]] = []
@@ -181,11 +222,13 @@ class Guard:
             masks: list[Finding] = []
             maskable_categories: set[str] = set()
             for finding, _ in items:
-                value = text[finding.start:finding.end]
+                value = text[finding.start : finding.end]
                 action = self._action(finding.category, value, provider, allowed_overrides)
                 if action == "allow":
-                    if policy.action(finding.category, rules, provider) == "mask" \
-                            and finding.category in allowed_overrides:
+                    if (
+                        policy.action(finding.category, rules, provider) == "mask"
+                        and finding.category in allowed_overrides
+                    ):
                         overridden.add(finding.category)
                     continue
                 in_key = finding.start < unit.value_offset
@@ -219,8 +262,13 @@ class Guard:
         if policy.mode == "shadow":
             # Shadow mode reports; it does not loosen the never-overridable categories unless the policy says
             # so explicitly (review R10). Binary blocks are image_document, a block category, so they hold too.
-            hard = [h for h in block_hits if h[0] in rules.categories
-                    and rules.categories[h[0]].action == "block" and not policy.shadow_block_categories]
+            hard = [
+                h
+                for h in block_hits
+                if h[0] in rules.categories
+                and rules.categories[h[0]].action == "block"
+                and not policy.shadow_block_categories
+            ]
             if not hard:
                 decision.shadow_rules = sorted(set(decision.shadow_rules) | set(decision.rules))
                 decision.action = "allow"
@@ -246,8 +294,10 @@ class Guard:
             masked = mask_text(value, shifted, vault, rules)
             left = residual(text[:offset] + masked, vault, rules, layers)
             masked_text = text[:offset] + masked
-            if any(self._action(f.category, masked_text[f.start:f.end], provider, allowed_overrides) != "allow"
-                   for f in left):
+            if any(
+                self._action(f.category, masked_text[f.start : f.end], provider, allowed_overrides) != "allow"
+                for f in left
+            ):
                 _fail(decision, SCAN_RULE, SCAN_ALIAS, "masking left a finding in place; nothing sent")
                 return Protected(decision, None)
             rewrites[unit.path] = masked
@@ -277,8 +327,14 @@ def _add_rule(decision: Decision, rule_id: str, aliases: tuple[str, ...]) -> Non
             decision.rules.append(name)
 
 
-def _note(decision: Decision, rule_id: str, aliases: tuple[str, ...], category: str,
-          path: tuple[str | int, ...], in_key: bool) -> None:
+def _note(
+    decision: Decision,
+    rule_id: str,
+    aliases: tuple[str, ...],
+    category: str,
+    path: tuple[str | int, ...],
+    in_key: bool,
+) -> None:
     _add_rule(decision, rule_id, aliases)
     decision.categories[category] = decision.categories.get(category, 0) + 1
     where = safe_path(path, in_key)

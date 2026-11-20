@@ -63,6 +63,32 @@ PYTHONPATH=src python3 -m privacy_gate.head --embeddings runs/gold-bge-m3.jsonl 
     --rules data/rules-baseline.json
 ```
 
+## Development
+
+The package needs nothing, but the tools that check it do. They are pinned in the `dev` dependency group
+in `pyproject.toml` and are never runtime dependencies:
+
+```bash
+python3 -m venv .venv && . .venv/bin/activate
+python -m pip install -U "pip>=25.1"     # `--group` needs pip 25.1+; or use `uv sync --group dev`
+python -m pip install --group dev
+pre-commit install                       # ruff, ruff-format, whitespace, YAML, and the guard-rules check
+```
+
+The `lint, types and coverage` CI job runs exactly these, so run them before you push:
+
+```bash
+ruff check .
+ruff format --check .
+mypy                                     # strict, over src/privacy_gate
+PYTHONPATH=src coverage run -m unittest discover -s tests && coverage report
+python scripts/build_rules.py --check    # if you touched rules/ or src/privacy_gate/guard/
+python -m build && twine check dist/*
+```
+
+`coverage report` fails below the floor in `[tool.coverage.report]`. Raise the floor when you add tests;
+do not lower it to make a build pass.
+
 ## What is most useful
 
 **More examples, especially hard negatives.** The gold set's weakest property is
