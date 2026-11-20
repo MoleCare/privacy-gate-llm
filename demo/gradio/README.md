@@ -5,13 +5,16 @@ colorFrom: yellow
 colorTo: green
 sdk: gradio
 sdk_version: 6.32.0
+python_version: '3.12'
 app_file: app.py
 pinned: false
 license: apache-2.0
-short_description: Catches health data, credentials and PII written as prose
+short_description: PII, PHI and secret detection for LLM prompts
 models:
 - YauhenBichel/privacy-gate-llm
 - BAAI/bge-m3
+datasets:
+- YauhenBichel/privacy-gate-gold
 tags:
 - privacy
 - pii-detection
@@ -19,6 +22,10 @@ tags:
 - guardrails
 - llm-safety
 - llm-router
+- llm-guardrail
+- prompt-privacy
+- data-loss-prevention
+- text-classification
 ---
 
 # privacy-gate

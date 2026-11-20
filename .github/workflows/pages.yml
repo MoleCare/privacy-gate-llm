@@ -1,0 +1,62 @@
+name: Pages
+
+# Publishes the static demo to GitHub Pages (https://yauhenbichel.github.io/privacy-gate-llm/): the same build as
+# the Hugging Face Space (`scripts/build_demo.py`), plus robots.txt and sitemap.xml. A mirror that does not depend on
+# Hugging Face and is indexed under github.io.
+#
+# Needs Pages enabled with "GitHub Actions" as the source (Settings > Pages); until then the deploy job fails
+# with "Get Pages site failed". Pull requests build the site, so a broken demo shows up before the merge.
+
+on:
+  push:
+    branches: [main]
+    paths: ['demo/**', 'model/head-v1.json', 'scripts/build_demo.py', '.github/workflows/pages.yml']
+  pull_request:
+    paths: ['demo/**', 'model/head-v1.json', 'scripts/build_demo.py', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment at a time; a newer push supersedes a queued one, but a running deployment finishes.
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Build the site from demo/ and model/head-v1.json
+        run: python scripts/build_demo.py pages --out _site/pages
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _site/pages
+
+  deploy:
+    needs: build
+    if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+      - name: The site serves the demo and the head
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          url="${PAGE_URL%/}/"
+          for path in "" head-v1.json robots.txt sitemap.xml; do
+            curl -fsS -o /dev/null --retry 5 --retry-delay 10 --retry-all-errors "$url$path"
+            echo "200 $url$path"
+          done

@@ -117,7 +117,7 @@ external = ["BLE001", "N802"]
 # The prompt is model input and every journal number was measured with it; re-wrapping it is not free.
 "training/prompt.py" = ["E501"]
 # User-facing copy in the Space UI, and Open WebUI reads the filter's front matter one line per key.
-"space/app.py" = ["E501"]
+"demo/gradio/app.py" = ["E501"]
 "integrations/open-webui/privacy_gate_filter.py" = ["E501"]
 
 [tool.ruff.lint.isort]

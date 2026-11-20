@@ -1,7 +1,9 @@
 name: Space
 
-# Pushes `space-static/` (the browser-side demo) to the Hugging Face Space when it changes on main. `space/` is the
-# Gradio variant for an account with CPU quota; switch the folder below to use it.
+# Pushes the static demo to the Hugging Face Space when it changes on main. The upload is assembled by
+# `scripts/build_demo.py space` from `demo/` plus the canonical head `model/head-v1.json`, which is copied in at
+# build time and never duplicated in the repository. (`demo/gradio/` is the Gradio variant for an account with CPU
+# quota: build the `gradio` target instead.) pages.yml publishes the same build to GitHub Pages.
 #
 # Configuration: the repository variable HF_SPACE (owner/name of the Space) and the repository secret HF_TOKEN (a
 # write token of the Space's owner).
@@ -12,7 +14,7 @@ name: Space
 on:
   push:
     branches: [main]
-    paths: ['space-static/**']
+    paths: ['demo/**', 'model/head-v1.json', 'scripts/build_demo.py', '.github/workflows/space.yml']
   workflow_dispatch:
 
 permissions:
@@ -34,7 +36,7 @@ jobs:
           HAS_TOKEN: ${{ secrets.HF_TOKEN != '' }}
         run: |
           if [ -z "$HF_SPACE" ]; then
-            echo "::notice title=Space sync not configured::Set the repository variable HF_SPACE (and the secret HF_TOKEN) to publish space-static/ to a Hugging Face Space."
+            echo "::notice title=Space sync not configured::Set the repository variable HF_SPACE (and the secret HF_TOKEN) to publish demo/ to a Hugging Face Space."
             echo "enabled=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -53,11 +55,14 @@ jobs:
       - name: Install huggingface_hub (pinned)
         if: steps.config.outputs.enabled == 'true'
         run: pip install -q huggingface_hub==2.4.0
+      - name: Build the Space from demo/ and model/head-v1.json
+        if: steps.config.outputs.enabled == 'true'
+        run: python scripts/build_demo.py space --out _site/space
 
       # delete_patterns names only the files this repository publishes, so a file that exists on the Space and
       # not here (anything added on the Hub) survives the sync. `.gitattributes` is never deleted by the hub
       # client either way; README.md is always re-uploaded, so it is not listed.
-      - name: Upload space-static/ to the Space
+      - name: Upload the build to the Space
         if: steps.config.outputs.enabled == 'true'
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -68,7 +73,7 @@ jobs:
           from huggingface_hub import HfApi
           api = HfApi(token=os.environ["HF_TOKEN"])
           info = api.upload_folder(
-              folder_path="space-static",
+              folder_path="_site/space",
               repo_id=os.environ["HF_SPACE"],
               repo_type="space",
               commit_message=f"space: sync from {os.environ['GITHUB_REPOSITORY']}@{os.environ['GITHUB_SHA'][:12]}",
@@ -82,7 +87,7 @@ jobs:
         env:
           HF_SPACE: ${{ vars.HF_SPACE }}
         run: |
-          want=$(sha256sum space-static/head-v1.json | cut -d' ' -f1)
+          want=$(sha256sum model/head-v1.json | cut -d' ' -f1)
           got=$(curl -fsSL --retry 5 --retry-delay 10 "https://huggingface.co/spaces/$HF_SPACE/resolve/main/head-v1.json" | sha256sum | cut -d' ' -f1)
           if [ "$want" != "$got" ]; then
             echo "::error title=Space out of sync::head-v1.json on $HF_SPACE is $got, expected $want"

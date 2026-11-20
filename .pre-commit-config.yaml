@@ -16,9 +16,9 @@ repos:
     hooks:
       - id: end-of-file-fixer
         # Generated and measured files are written byte for byte by their tools; their hashes are checked.
-        exclude: ^(src/privacy_gate/guard/privacy-v2\.json|rules/.*\.json|model/.*\.json|space-static/head-v1\.json|space(-static)?/explorer/data\.json|data/)
+        exclude: ^(src/privacy_gate/guard/privacy-v2\.json|rules/.*\.json|model/.*\.json|demo/explorer/data\.json|data/)
       - id: trailing-whitespace
-        exclude: ^(src/privacy_gate/guard/privacy-v2\.json|rules/.*\.json|model/.*\.json|space-static/head-v1\.json|space(-static)?/explorer/data\.json|data/)
+        exclude: ^(src/privacy_gate/guard/privacy-v2\.json|rules/.*\.json|model/.*\.json|demo/explorer/data\.json|data/)
         args: [--markdown-linebreak-ext=md]
       - id: check-yaml
 
