@@ -54,8 +54,11 @@ internal URL. A client that stalls for 10 seconds is disconnected.
 
 ### 3. Port the arithmetic
 
-If you would rather not run Python at all, `model/head-v1.json` is public data:
-`weights`, `bias`, `mean`, `stdev`, `threshold`. In TypeScript:
+If you would rather not run Python at all, use the npm package. `npm install privacy-gate-llm`
+ships this head and the guard's pattern rules, and exports `score()`, `hold()`, `decide()` and
+`findSensitive()` (see [`js/README.md`](../js/README.md)). The arithmetic is short enough to inline
+as well. `model/head-v1.json` is public data: `weights`, `bias`, `mean`, `stdev`, `threshold`. In
+TypeScript:
 
 ```ts
 import head from "./head-v1.json";
