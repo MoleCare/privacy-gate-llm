@@ -18,3 +18,11 @@ __pycache__/
 .mypy_cache/
 
 .DS_Store
+
+# Build, test and coverage output.
+dist/
+build/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/

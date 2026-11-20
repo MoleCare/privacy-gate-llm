@@ -17,11 +17,13 @@ in the test suite is what keeps that honest.
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import math
 import random
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 Vector = list[float]
 
@@ -55,7 +57,7 @@ class Model:
         )
 
     @staticmethod
-    def from_json(text: str) -> "Model":
+    def from_json(text: str) -> Model:
         raw = json.loads(text)
         return Model(
             weights=raw["weights"],
@@ -106,9 +108,7 @@ def fit(
         raise ValueError(f"{len(rows)} rows but {len(labels)} labels")
 
     mean, stdev = _standardise(rows)
-    scaled = [
-        [(value - mu) / sigma for value, mu, sigma in zip(row, mean, stdev)] for row in rows
-    ]
+    scaled = [[(value - mu) / sigma for value, mu, sigma in zip(row, mean, stdev)] for row in rows]
     n, width = len(scaled), len(scaled[0])
     weights = [0.0] * width
     bias = 0.0
@@ -136,9 +136,7 @@ def auc(scores: list[float], labels: list[int]) -> float:
     negatives = [s for s, y in zip(scores, labels) if y == 0]
     if not positives or not negatives:
         return float("nan")
-    wins = sum(
-        1.0 if p > n else 0.5 if p == n else 0.0 for p in positives for n in negatives
-    )
+    wins = sum(1.0 if p > n else 0.5 if p == n else 0.0 for p in positives for n in negatives)
     return wins / (len(positives) * len(negatives))
 
 
@@ -180,14 +178,12 @@ def cross_validate(
     return CrossValidated(auc=auc(ordered, labels), held_out_scores=held_out, k=k)
 
 
-def sweep(scores: list[float], labels: list[int]) -> list[dict]:
+def sweep(scores: list[float], labels: list[int]) -> list[dict[str, Any]]:
     """Catch and friction at every distinct threshold."""
     positives = sum(labels)
     negatives = len(labels) - positives
     cuts = sorted(set(scores))
-    candidates = (
-        [cuts[0] - 1.0] + [(a + b) / 2 for a, b in zip(cuts, cuts[1:])] + [cuts[-1] + 1.0]
-    )
+    candidates = [cuts[0] - 1.0] + [(a + b) / 2 for a, b in itertools.pairwise(cuts)] + [cuts[-1] + 1.0]
     points = []
     for threshold in candidates:
         caught = sum(1 for s, y in zip(scores, labels) if y == 1 and s > threshold)
@@ -223,11 +219,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--embedding-model-hf", default="BAAI/bge-m3", help="Hugging Face id")
     args = parser.parse_args(argv)
 
-    rows_in = [
-        json.loads(line)
-        for line in Path(args.embeddings).read_text().splitlines()
-        if line.strip()
-    ]
+    rows_in = [json.loads(line) for line in Path(args.embeddings).read_text().splitlines() if line.strip()]
     vectors = [r["vector"] for r in rows_in]
     labels = [1 if holds(r["label"]) else 0 for r in rows_in]
     ids = [r["id"] for r in rows_in]
@@ -261,19 +253,23 @@ def main(argv: list[str] | None = None) -> int:
     chosen = min(eligible, key=lambda p: p[fkey]) if eligible else None
 
     print(f"### logistic head over embeddings, {args.k}-fold cross-validated\n")
-    print(f"**AUC {result.auc:.4f}** over {len(vectors)} examples "
-          f"({sum(labels)} sensitive). Every score comes from a model that never "
-          f"saw that example.\n")
+    print(
+        f"**AUC {result.auc:.4f}** over {len(vectors)} examples "
+        f"({sum(labels)} sensitive). Every score comes from a model that never "
+        f"saw that example.\n"
+    )
     if chosen:
-        print(f"At catch >= {args.min_catch:.0%}: threshold {chosen['threshold']:+.3f}, "
-              f"catch {chosen[ckey]:.1%}, **friction {chosen[fkey]:.1%}**, "
-              f"leaks {chosen.get('composed_leaks', chosen['leaks'])}.\n")
+        print(
+            f"At catch >= {args.min_catch:.0%}: threshold {chosen['threshold']:+.3f}, "
+            f"catch {chosen[ckey]:.1%}, **friction {chosen[fkey]:.1%}**, "
+            f"leaks {chosen.get('composed_leaks', chosen['leaks'])}.\n"
+        )
     else:
         print(f"No threshold reaches catch >= {args.min_catch:.0%}.\n")
 
     print("| threshold | catch | friction |")
     print("|---|---|---|")
-    seen: set[tuple] = set()
+    seen: set[tuple[Any, Any]] = set()
     for point in points:
         pair = (point[ckey], point[fkey])
         if pair in seen:

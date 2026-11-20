@@ -22,6 +22,7 @@ import sys
 from collections import defaultdict
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any
 
 from . import ollama, prompt
 from .dataset import Example, load
@@ -95,7 +96,7 @@ def _rate(numerator: int, denominator: int) -> float:
     return numerator / denominator if denominator else 0.0
 
 
-def score(predictions: list[Prediction], rules: dict[str, bool] | None = None) -> dict:
+def score(predictions: list[Prediction], rules: dict[str, bool] | None = None) -> dict[str, Any]:
     """Metrics for the model alone, and for rules-then-model as deployed.
 
     An unparseable answer counts as CLEAN, because that is what a gate that
@@ -117,7 +118,7 @@ def score(predictions: list[Prediction], rules: dict[str, bool] | None = None) -
     exact = None if binary_mode else [p for p in caught if p.predicted == p.gold]
 
     seconds = [p.seconds for p in predictions]
-    result: dict = {
+    result: dict[str, Any] = {
         "n": len(predictions),
         "sensitive": len(sensitive),
         "clean": len(clean),
@@ -127,9 +128,7 @@ def score(predictions: list[Prediction], rules: dict[str, bool] | None = None) -
             "friction_rate": round(_rate(len(friction), len(clean)), 4),
             "leaks": len(leaks),
             "friction": len(friction),
-            "label_accuracy_on_caught": (
-                None if exact is None else round(_rate(len(exact), len(caught)), 4)
-            ),
+            "label_accuracy_on_caught": (None if exact is None else round(_rate(len(exact), len(caught)), 4)),
         },
         "latency_seconds": {
             "mean": round(statistics.mean(seconds), 3),
@@ -140,7 +139,7 @@ def score(predictions: list[Prediction], rules: dict[str, bool] | None = None) -
         "friction_ids": [p.id for p in friction],
     }
 
-    by_slice: dict[str, dict] = defaultdict(lambda: {"n": 0, "correct_gate": 0})
+    by_slice: dict[str, dict[str, Any]] = defaultdict(lambda: {"n": 0, "correct_gate": 0})
     for p in predictions:
         bucket = by_slice[p.slice]
         bucket["n"] += 1
@@ -176,7 +175,7 @@ def score(predictions: list[Prediction], rules: dict[str, bool] | None = None) -
     return result
 
 
-def render(model: str, result: dict) -> str:
+def render(model: str, result: dict[str, Any]) -> str:
     m = result["model"]
     lines = [
         f"### {model}",

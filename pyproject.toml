@@ -58,3 +58,79 @@ packages = ["src/privacy_gate"]
 
 [tool.hatch.build.targets.sdist]
 include = ["src/privacy_gate", "model/head-v1.json", "rules/privacy-v2.yaml", "rules/conformance.v2.json", "rules/conformance.bodies.v2.json", "README.md", "LICENSE", "NOTICE", "CHANGELOG.md", "pyproject.toml"]
+
+# Development tools only. Nothing here is a runtime dependency: `dependencies = []` above stays empty, and
+# the `package` CI job fails if the installed wheel pulls anything in. Exact pins, so a new lint rule or a
+# stricter mypy release is a deliberate bump, not a surprise red build. Install with `uv sync --group dev`
+# or `pip install --group dev` (pip 25.1+).
+[dependency-groups]
+dev = [
+  "ruff==0.17.6",
+  "mypy==2.4.1",
+  "coverage==7.17.3",
+  "build==1.6.1",
+  "twine==7.0.0",
+  "pre-commit==4.7.0",
+  "pyyaml==6.0.2",  # scripts/build_rules.py only; the same pin the guard-rules CI job uses
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 110
+# Python blocks in the docs are hand-aligned for reading; ruff would reformat them.
+extend-exclude = [".venv", "runs", "*.md"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+ignore = [
+  # `zip(..., strict=True)` raises where the code now silently stops at the shorter input. Adding it is a
+  # behaviour change, so it is a per-call-site decision for a later PR, not a lint sweep.
+  "B905",
+]
+# The formatter wraps code at 110; comments and string literals it cannot wrap get a little slack.
+pycodestyle.max-line-length = 120
+# These codes are not selected, but the `# noqa` comments that name them mark a deliberate choice (a broad
+# `except`, an http.server `do_GET` method name) for the reader. Keep them rather than let RUF100 strip them.
+external = ["BLE001", "N802"]
+
+[tool.ruff.lint.per-file-ignores]
+# Look-alike characters are the point: the normaliser folds them, and the tests feed them in.
+"src/privacy_gate/guard/normalize.py" = ["RUF001", "RUF002", "RUF003"]
+"tests/**" = ["RUF001", "RUF002", "RUF003"]
+# The prompt is model input and every journal number was measured with it; re-wrapping it is not free.
+"src/privacy_gate/prompt.py" = ["E501"]
+# User-facing copy in the Space UI, and Open WebUI reads the filter's front matter one line per key.
+"space/app.py" = ["E501"]
+"integrations/open-webui/privacy_gate_filter.py" = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["privacy_gate"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src/privacy_gate"]
+mypy_path = "src"
+strict = true
+warn_unreachable = true
+
+# Not a relaxation of our code: `sentence-transformers` is the optional `local` extra, imported lazily inside
+# LocalEmbedder._load, and it is not installed where mypy runs (CI installs no runtime dependencies at all).
+[[tool.mypy.overrides]]
+module = ["sentence_transformers", "sentence_transformers.*"]
+ignore_missing_imports = true
+
+[tool.coverage.run]
+branch = true
+source = ["privacy_gate"]
+
+[tool.coverage.report]
+# Measured 82.73 % (branch) when this floor was set. The gap is the parts that need a live Ollama or a model:
+# embed.py, ollama.py, and the CLI halves of calibrate.py, evaluate.py and head.py. Raise it as tests land;
+# never lower it to make a red build green.
+fail_under = 82
+show_missing = true
+skip_covered = true
+exclude_also = [
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]

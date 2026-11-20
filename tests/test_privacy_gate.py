@@ -26,9 +26,7 @@ from privacy_gate.prompt import build, build_binary
 
 
 def prediction(id: str, gold: str, predicted: str | None, slice: str = "s") -> Prediction:
-    return Prediction(
-        id=id, slice=slice, gold=gold, raw=predicted or "", predicted=predicted, seconds=0.1
-    )
+    return Prediction(id=id, slice=slice, gold=gold, raw=predicted or "", predicted=predicted, seconds=0.1)
 
 
 class TestLabels(unittest.TestCase):
@@ -62,9 +60,8 @@ class TestLabels(unittest.TestCase):
 
 class TestDataset(unittest.TestCase):
     def write(self, body: str) -> str:
-        handle = tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False)
-        handle.write(body)
-        handle.close()
+        with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False) as handle:
+            handle.write(body)
         return handle.name
 
     def test_loads_the_real_gold_set(self) -> None:
@@ -279,9 +276,7 @@ class TestHead(unittest.TestCase):
 
 class TestGate(unittest.TestCase):
     def gate(self, width: int = 4) -> Gate:
-        model = Model(
-            weights=[1.0] * width, bias=0.0, mean=[0.0] * width, stdev=[1.0] * width
-        )
+        model = Model(weights=[1.0] * width, bias=0.0, mean=[0.0] * width, stdev=[1.0] * width)
         return Gate(model=model, threshold=0.0)
 
     def test_rejects_the_wrong_embedding_width(self) -> None:

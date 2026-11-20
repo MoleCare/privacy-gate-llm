@@ -99,9 +99,11 @@ class TestOllamaBackend(unittest.TestCase):
         self.assertNotIn("options", post.call_args[0][2])
 
     def test_wrong_count_is_an_error(self) -> None:
-        with mock.patch.object(ollama, "_post", return_value={"embeddings": [unit(1)]}):
-            with self.assertRaises(ollama.OllamaError):
-                backends.OllamaEmbedder().embed(["a", "b"])
+        with (
+            mock.patch.object(ollama, "_post", return_value={"embeddings": [unit(1)]}),
+            self.assertRaises(ollama.OllamaError),
+        ):
+            backends.OllamaEmbedder().embed(["a", "b"])
 
 
 class TestOpenAIBackend(unittest.TestCase):
@@ -129,21 +131,35 @@ class TestOpenAIBackend(unittest.TestCase):
         return captured, fake_urlopen
 
     def test_posts_v1_embeddings_in_order_and_normalises(self) -> None:
-        half = [0.5 * v for v in unit(3)]                                  # not unit length: must be normalised
-        captured, fake = self._serve({"data": [{"index": 1, "embedding": unit(2)}, {"index": 0, "embedding": half}]})
-        with mock.patch.object(urllib.request, "urlopen", fake), mock.patch.dict("os.environ", {"PRIVACY_GATE_API_KEY": "k"}):
+        half = [0.5 * v for v in unit(3)]  # not unit length: must be normalised
+        captured, fake = self._serve(
+            {"data": [{"index": 1, "embedding": unit(2)}, {"index": 0, "embedding": half}]}
+        )
+        with (
+            mock.patch.object(urllib.request, "urlopen", fake),
+            mock.patch.dict("os.environ", {"PRIVACY_GATE_API_KEY": "k"}),
+        ):
             vectors = backends.OpenAIEmbedder("http://gw:11500", "bge-m3").embed(["a", "b"])
         self.assertEqual(captured["url"], "http://gw:11500/v1/embeddings")
         self.assertEqual(captured["headers"]["authorization"], "Bearer k")
-        self.assertEqual(captured["body"], {"model": "bge-m3", "input": ["a", "b"], "encoding_format": "float"})
-        self.assertAlmostEqual(math.sqrt(sum(v * v for v in vectors[0])), 1.0, places=6)   # index 0 first, unit
-        self.assertAlmostEqual(sum(a * b for a, b in zip(vectors[1], unit(2))), 1.0, places=9)   # index 1 second
+        self.assertEqual(
+            captured["body"], {"model": "bge-m3", "input": ["a", "b"], "encoding_format": "float"}
+        )
+        self.assertAlmostEqual(
+            math.sqrt(sum(v * v for v in vectors[0])), 1.0, places=6
+        )  # index 0 first, unit
+        self.assertAlmostEqual(
+            sum(a * b for a, b in zip(vectors[1], unit(2))), 1.0, places=9
+        )  # index 1 second
 
     def test_http_error_is_a_gate_error(self) -> None:
         _captured, fake = self._serve({}, status=401)
-        with mock.patch.object(urllib.request, "urlopen", fake), mock.patch.dict("os.environ", {}, clear=True):
-            with self.assertRaises(ollama.OllamaError) as ctx:
-                backends.OpenAIEmbedder("http://gw:11500").embed(["a"])
+        with (
+            mock.patch.object(urllib.request, "urlopen", fake),
+            mock.patch.dict("os.environ", {}, clear=True),
+            self.assertRaises(ollama.OllamaError) as ctx,
+        ):
+            backends.OpenAIEmbedder("http://gw:11500").embed(["a"])
         self.assertIn("401", str(ctx.exception))
 
     def test_zero_vector_is_refused(self) -> None:
@@ -169,15 +185,17 @@ class TestLocalBackend(unittest.TestCase):
             embedder = backends.make_embedder("local")
             gate = Gate.load(embedder=embedder)
             vectors = embedder.embed(["a", "b"])
-        self.assertEqual(calls["model"], "BAAI/bge-m3")               # from the head file
+        self.assertEqual(calls["model"], "BAAI/bge-m3")  # from the head file
         self.assertTrue(calls["normalize"])
         self.assertEqual(len(vectors), 2)
         self.assertEqual(gate.embedder.name, "local")
 
     def test_missing_dependency_says_how_to_install(self) -> None:
-        with mock.patch.dict(sys.modules, {"sentence_transformers": None}):
-            with self.assertRaises(ollama.OllamaError) as ctx:
-                backends.LocalEmbedder().embed(["a"])
+        with (
+            mock.patch.dict(sys.modules, {"sentence_transformers": None}),
+            self.assertRaises(ollama.OllamaError) as ctx,
+        ):
+            backends.LocalEmbedder().embed(["a"])
         self.assertIn("molecare-privacy-gate[local]", str(ctx.exception))
 
     def test_unknown_backend(self) -> None:
@@ -188,8 +206,12 @@ class TestLocalBackend(unittest.TestCase):
 class TestCli(unittest.TestCase):
     def run_cli(self, argv: list[str], embedder=None, stdin: str = "") -> tuple[int, str, str]:
         out, err = io.StringIO(), io.StringIO()
-        with mock.patch.object(backends, "make_embedder", return_value=embedder or FakeEmbedder()), \
-                mock.patch.object(sys, "stdin", io.StringIO(stdin)), redirect_stdout(out), redirect_stderr(err):
+        with (
+            mock.patch.object(backends, "make_embedder", return_value=embedder or FakeEmbedder()),
+            mock.patch.object(sys, "stdin", io.StringIO(stdin)),
+            redirect_stdout(out),
+            redirect_stderr(err),
+        ):
             code = cli.main(argv)
         return code, out.getvalue(), err.getvalue()
 
@@ -313,7 +335,9 @@ class TestSidecar(unittest.TestCase):
 
     def test_bad_bodies(self) -> None:
         _server, conn = self._server(FakeEmbedder())
-        self.assertEqual(self._post(conn, b"not json"), (400, {"error": "body must be JSON", "code": "bad_json"}))
+        self.assertEqual(
+            self._post(conn, b"not json"), (400, {"error": "body must be JSON", "code": "bad_json"})
+        )
         self.assertEqual(self._post(conn, b"\xff\xfe not utf-8")[1]["code"], "bad_json")
         self.assertEqual(self._post(conn, {"texts": "one"})[0], 400)
         self.assertEqual(self._post(conn, {"texts": ["a", 1]})[0], 400)
@@ -342,7 +366,8 @@ class TestSidecar(unittest.TestCase):
         for value in ("abc", "-5", "1.5", "", "\xb2"):
             with self.subTest(value=value):
                 status, body = self._raw(
-                    server, f"POST /check HTTP/1.1\r\nHost: x\r\nContent-Length: {value}\r\n\r\n".encode("latin-1")
+                    server,
+                    f"POST /check HTTP/1.1\r\nHost: x\r\nContent-Length: {value}\r\n\r\n".encode("latin-1"),
                 )
                 self.assertEqual((status, body["code"]), (400, "bad_content_length"))
         status, body = self._raw(server, b"POST /check HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n")

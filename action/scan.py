@@ -22,10 +22,44 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-SKIP_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".pdf", ".zip", ".gz", ".tar", ".whl", ".pyc",
-                 ".woff", ".woff2", ".ttf", ".otf", ".mp3", ".mp4", ".wav", ".onnx", ".safetensors", ".bin", ".lock",
-                 ".svg", ".min.js", ".min.css", ".map"}
-SKIP_NAMES = {"package-lock.json", "yarn.lock", "pnpm-lock.yaml", "poetry.lock", "uv.lock", "Cargo.lock", "go.sum"}
+SKIP_SUFFIXES = {
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
+    ".ico",
+    ".pdf",
+    ".zip",
+    ".gz",
+    ".tar",
+    ".whl",
+    ".pyc",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".otf",
+    ".mp3",
+    ".mp4",
+    ".wav",
+    ".onnx",
+    ".safetensors",
+    ".bin",
+    ".lock",
+    ".svg",
+    ".min.js",
+    ".min.css",
+    ".map",
+}
+SKIP_NAMES = {
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "poetry.lock",
+    "uv.lock",
+    "Cargo.lock",
+    "go.sum",
+}
 HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
 
 
@@ -68,12 +102,14 @@ def wanted(path: str, patterns: list[str]) -> bool:
 
 
 def git_diff(base: str) -> str:
-    if base:
-        rev = f"{base}...HEAD"
-    else:
-        rev = "HEAD~1...HEAD"
-    return subprocess.run(["git", "diff", "--unified=0", "--no-color", "--diff-filter=AM", rev],
-                          capture_output=True, text=True, errors="replace", check=True).stdout
+    rev = f"{base}...HEAD" if base else "HEAD~1...HEAD"
+    return subprocess.run(
+        ["git", "diff", "--unified=0", "--no-color", "--diff-filter=AM", rev],
+        capture_output=True,
+        text=True,
+        errors="replace",
+        check=True,
+    ).stdout
 
 
 def main() -> int:
@@ -93,7 +129,11 @@ def main() -> int:
     except subprocess.CalledProcessError as error:
         print(f"::error::privacy-gate: git diff failed: {error.stderr[:200]}")
         return 1
-    candidates = [(f, n, t.strip()) for f, n, t in added_lines(diff) if wanted(f, patterns) and len(t.strip()) >= min_length]
+    candidates = [
+        (f, n, t.strip())
+        for f, n, t in added_lines(diff)
+        if wanted(f, patterns) and len(t.strip()) >= min_length
+    ]
     seen, lines = set(), []
     for item in candidates:
         if item[2] not in seen:
@@ -113,29 +153,38 @@ def main() -> int:
     holds = []
     try:
         for start in range(0, len(lines), 32):
-            batch = lines[start:start + 32]
+            batch = lines[start : start + 32]
             for (path, number, text), decision in zip(batch, gate.decide_many([t for _, _, t in batch])):
                 if decision.hold:
                     holds.append((path, number, text, decision))
     except Exception as error:  # noqa: BLE001 - a scanner that cannot scan must not pass
-        print(f"::error::privacy-gate: cannot score ({type(error).__name__}: {str(error)[:160]}); failing closed")
+        print(
+            f"::error::privacy-gate: cannot score ({type(error).__name__}: {str(error)[:160]}); failing closed"
+        )
         return 1
 
     by_file: dict[str, list] = defaultdict(list)
     for path, number, text, decision in holds:
         by_file[path].append((number, text, decision))
         preview = text[:60] + ("…" if len(text) > 60 else "")
-        print(f"::error file={path},line={number},title=privacy-gate: must this stay?::score {decision.score:.2f} "
-              f"(threshold {decision.threshold:.2f}): {preview}")
+        print(
+            f"::error file={path},line={number},title=privacy-gate: must this stay?::score {decision.score:.2f} "
+            f"(threshold {decision.threshold:.2f}): {preview}"
+        )
     with outputs.open("a") as f:
         f.write(f"holds={len(holds)}\nscanned={len(lines)}\n")
     with summary.open("a") as f:
         f.write(f"## privacy-gate\n\n{len(lines)} added lines scored, **{len(holds)} held**.\n\n")
         for path, items in by_file.items():
-            f.write(f"- `{path}`: " + ", ".join(f"line {n} (score {d.score:.2f})" for n, _, d in items) + "\n")
+            f.write(
+                f"- `{path}`: " + ", ".join(f"line {n} (score {d.score:.2f})" for n, _, d in items) + "\n"
+            )
         if holds:
-            f.write("\nA hold means the line reads like health data, a credential or personal data written as prose. "
-                    "If it is an invented fixture, say so in the file and in the pull request; see the project's SECURITY.md.\n")
+            f.write(
+                "\nA hold means the line reads like health data, a credential or personal data written as prose. "
+                "If it is an invented fixture, say so in the file and in the pull request; "
+                "see the project's SECURITY.md.\n"
+            )
     print(f"privacy-gate: {len(lines)} lines scored, {len(holds)} held")
     return 1 if holds and fail_on_hold else 0
 

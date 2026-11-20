@@ -20,7 +20,7 @@ import math
 import os
 import urllib.error
 import urllib.request
-from typing import Protocol
+from typing import Any, Protocol
 
 from . import ollama
 
@@ -44,7 +44,7 @@ class OllamaEmbedder:
         url: str = ollama.DEFAULT_URL,
         model: str = DEFAULT_MODEL,
         timeout: float = 900.0,
-        options: dict | None = None,
+        options: dict[str, Any] | None = None,
     ) -> None:
         """`options` go to Ollama unchanged. `{"num_gpu": 0}` keeps the encoder on the CPU, so that on a box
         with one GPU slot the gate never evicts the chat model somebody is using. `num_ctx` is never sent: it
@@ -53,13 +53,15 @@ class OllamaEmbedder:
         self.options = {k: v for k, v in (options or {}).items() if k != "num_ctx"}
 
     def embed(self, texts: list[str]) -> list[list[float]]:
-        payload: dict = {"model": self.model, "input": texts, "keep_alive": "30m"}
+        payload: dict[str, Any] = {"model": self.model, "input": texts, "keep_alive": "30m"}
         if self.options:
             payload["options"] = self.options
         body = ollama._post(self.url, "/api/embed", payload, self.timeout)
-        vectors = body.get("embeddings")
+        vectors: list[list[float]] | None = body.get("embeddings")
         if not vectors or len(vectors) != len(texts):
-            raise ollama.OllamaError(f"expected {len(texts)} embeddings, got {0 if not vectors else len(vectors)}")
+            raise ollama.OllamaError(
+                f"expected {len(texts)} embeddings, got {0 if not vectors else len(vectors)}"
+            )
         return vectors
 
 
@@ -107,9 +109,11 @@ class LocalEmbedder:
     name = "local"
 
     def __init__(self, model: str = DEFAULT_MODEL_HF, device: str | None = None) -> None:
-        self.model_id, self.device, self._model = model, device, None
+        # `Any`: the type lives in an optional dependency that the core must not import at load time.
+        self.model_id, self.device = model, device
+        self._model: Any = None
 
-    def _load(self):  # noqa: ANN202 - the type lives in an optional dependency
+    def _load(self) -> Any:
         if self._model is None:
             try:
                 from sentence_transformers import SentenceTransformer
