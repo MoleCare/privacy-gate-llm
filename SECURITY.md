@@ -59,6 +59,48 @@ scanned, because a real credential committed there would be a real problem.
 **If an alert fires on anything outside `data/`, treat it as real until proven
 otherwise.** That is the entire reason for keeping the exclusion this narrow.
 
+## The privacy guard: threat model
+
+The guard (in development for 2.0; design in
+`docs/design/DESIGN-2026-11-20-privacy-guard.md`, decision record in
+`docs/architecture/0002-guard-lives-with-the-detector.md`) checks what a coding
+assistant is about to send to a model provider, and blocks or masks what it finds.
+It is a net, not a proof. It is not a medical device, and it does not make a
+provider fit to receive patient data.
+
+**It protects against** a person or an agent *accidentally* sending secrets,
+identifiers, contact details, clinical text or images to a provider, including
+data riding in tool results, history, tool definitions, metadata, headers or
+encoded forms (base64, hex, URL encoding, escapes).
+
+**It does not protect against:**
+
+| | Limit | What the guard does about it |
+|---|---|---|
+| L1 | Re-identification by combination: a role, a town, dates and a rare condition identify someone with no name present | health and identifier categories are blocked outright; four or more distinct maskable categories in one text are blocked (PG-COMBO-001); the rest is a documented residual |
+| L2 | Paraphrased or transformed secrets: reversed, spelled out, split far apart, rot13, translated | common encodings and adjacent splits are decoded; the rest is beyond any pattern |
+| L3 | Personal data in the model's reply | not the guard's job; replies may be reported, never altered |
+| L4 | Prompt injection asking for the value behind a placeholder | the provider never had the value; an injection that makes an agent *send* data in a new form is L2 |
+| L5 | Bypass: a client that ignores the base URL, a second tool, a deliberate user | custody mode and `doctor` narrow it; a malicious insider is out of scope |
+| L6 | Detector misses: a new key format, an unusual name, a language the entity model handles poorly | layered detectors; every reported miss becomes a fixture |
+| L7 | Files already uploaded and referenced by id | upload endpoints are not forwarded by default; references are audited |
+| L8 | The guard sees everything, so it is a target | loopback only, no content in logs, pinned dependencies and actions, signed releases |
+
+**Fail closed.** If the rules or the policy cannot be loaded, or an input is too
+large or too deep to scan in full, or the engine raises, the request is refused.
+Nothing the guard did not finish reading is sent.
+
+**The guard's own records** hold no raw values: categories, rule ids, counts and
+values hashed under a local key, truncated to 8 hex characters.
+
+**Rules fixtures are scanned like everything else.** `rules/privacy-v2.yaml` and
+the generated `rules/conformance.v2.json` hold hundreds of near-credentials, but
+every value is low-entropy and obviously invented (AWS's documentation key,
+`EXAMPLE-NOT-A-KEY`, `NOTAREAL` markers, published test card numbers, RFC 2606
+domains, documentation IP ranges). They are deliberately *not* excluded from
+secret scanning: an alert on them means a fixture is too realistic, and the
+fix is a lower-entropy fixture, not an exclusion.
+
 ## Running the evaluation
 
 `scripts/rules_oracle.py` shells out to `llm-harness explain`, which decides

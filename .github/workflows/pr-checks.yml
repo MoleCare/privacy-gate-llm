@@ -111,6 +111,22 @@ jobs:
           )
           PY
 
+  guard-rules:
+    name: guard rules are compiled and every fixture passes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      # PyYAML is a development dependency of the generator only; the engine loads the compiled JSON. The
+      # check rebuilds both generated files in memory and fails if they differ from the committed ones, if any
+      # regex is not RE2-portable, or if any fixture produces other spans than its markers say.
+      - name: Generated rules and conformance suite are up to date
+        run: |
+          pip install -q pyyaml==6.0.2
+          python scripts/build_rules.py --check
+
   package:
     name: the wheel installs and carries the head
     runs-on: ubuntu-latest
@@ -130,3 +146,4 @@ jobs:
           /tmp/clean/bin/pip list --format=freeze | grep -v -i -E '^(pip|molecare.privacy.gate)=' && { echo "::error::the wheel pulled in a dependency"; exit 1; } || true
           /tmp/clean/bin/privacy-gate info
           /tmp/clean/bin/privacy-gate info | python -c "import json,sys,hashlib; i=json.load(sys.stdin); h=hashlib.sha256(open('model/head-v1.json','rb').read()).hexdigest(); assert i['head_sha256']==h, (i['head_sha256'], h); print('bundled head matches model/head-v1.json', h[:16])"
+          /tmp/clean/bin/privacy-gate info | python -c "import json,sys,hashlib; i=json.load(sys.stdin); h=hashlib.sha256(open('src/privacy_gate/guard/privacy-v2.json','rb').read()).hexdigest(); assert i['ruleset']['sha256']==h, (i['ruleset'], h); print('bundled rules match privacy-v2.json', h[:16])"

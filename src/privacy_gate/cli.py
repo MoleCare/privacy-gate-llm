@@ -87,10 +87,15 @@ def cmd_serve(args: argparse.Namespace) -> int:
 
 
 def cmd_info(args: argparse.Namespace) -> int:
+    from .guard import Ruleset
+
     gate = Gate.load(args.head, embedder=backends.make_embedder("ollama"))
+    rules = Ruleset.load()
     print(json.dumps({"head": str(gate.head_path), "head_sha256": gate.head_sha256, "threshold": gate.threshold,
                       "embedding_model": gate.embedding_model, "dimensions": len(gate.model.weights),
-                      **{k: gate.meta[k] for k in ("trained_on", "cross_validated_auc", "embedding_model_hf") if k in gate.meta}},
+                      **{k: gate.meta[k] for k in ("trained_on", "cross_validated_auc", "embedding_model_hf") if k in gate.meta},
+                      "ruleset": {"id": rules.id, "version": rules.version, "sha256": rules.sha256,
+                                  "rules": len(rules.rules)}},
                      indent=1))
     return 0
 

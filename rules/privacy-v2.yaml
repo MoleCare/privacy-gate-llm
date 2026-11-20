@@ -1,0 +1,574 @@
+# privacy-gate rules, schema v2
+#
+# The one rules file for the guard: categories, what each one does by default, the patterns and validators
+# that find them, and fixtures that pin down both hits and near misses. Every engine (Python here, the
+# TypeScript engine, llm-harness) loads the same compiled form and runs the same conformance suite, so a
+# disagreement about a rule is settled here, by reading it, without reading any engine's code.
+#
+# Do not edit the generated files. After changing this one:
+#
+#     uv run --with pyyaml==6.0.2 scripts/build_rules.py
+#
+# which checks the schema, checks that every regex is RE2-portable, runs every fixture, and writes
+#   src/privacy_gate/guard/privacy-v2.json   the compiled rules the engine loads (no YAML parser needed)
+#   rules/conformance.v2.json                every fixture with the exact spans it must produce
+#
+# Fixtures
+#   `fail` texts mark every span the rule must report with ⟦ and ⟧ (U+27E6, U+27E7). The markers are removed
+#   before matching; their positions are the expected spans, in Unicode code points. `pass` texts have no
+#   markers and the rule must report nothing in them. A fixture may also be a mapping
+#   {prefix, repeat, times, suffix} for long inputs, built as prefix + repeat * times + suffix.
+#
+#   Every value here is invented, low-entropy and obviously fake (see SECURITY.md and CONTRIBUTING.md):
+#   AWS's documentation key, NOTAREAL markers, published test card numbers, NHS Digital's test number,
+#   Ofcom's drama ranges, RFC 2606 domains, the RFC 5737 and RFC 3849 documentation ranges.
+#
+# Matching semantics (pinned by the conformance suite; see src/privacy_gate/guard/rules.py)
+#   - RE2-portable regexes only: no lookaround, backreferences, named groups, possessive quantifiers or
+#     \A/\Z; an inline (?i) only at the start. ASCII semantics for \b \w \d \s, as in RE2 and JavaScript.
+#   - `group`: the span is that capture group instead of the whole match.
+#   - `validator`: a named check the span must pass (Luhn, mod 97, mod 11 ...).
+#   - `except`: regexes; a span is dropped when one matches the WHOLE span. Per span, never per text.
+#   - `except_values`: literal values; a span is dropped when it equals one after removing spaces and hyphens.
+#   - A rule's spans from all its patterns are merged where they overlap.
+#
+# Versioning: a rule that fires more is a minor version; one that fires less is a major version and needs a
+# fixture showing why. The engine reports the SHA-256 of the compiled file in every decision and audit line.
+#
+# Rules carried over from llm-harness ruleset v1 keep its id in `aliases:` (PRIV001-005). Engines report the
+# alias beside the rule id, so readers keyed on the old ids keep working. All v1 fixtures are here, re-marked
+# with spans, except the jwt.io token, replaced with an unsigned lower-entropy token of the same shape so that
+# secret scanners on pull requests have nothing to decide about. `seeded_from` names the v1 commit and the
+# hash of its compiled ruleset.v1.json.
+
+schema: privacy-gate-rules/2
+id: privacy-v2
+version: "2.0.0"
+updated: "2026-11-20"
+seeded_from:
+  repo: llm-harness
+  pr: 32
+  commit: 25dabd64d5a4c711dd46db55673f24653ef0f5a0
+  ruleset_v1_sha256: 8347d9d1abe53d88d2998a0bb8fda25491d4308419dbeefaf1280253a33edc65
+  note: Head of llm-harness pull request 32 (keys with values, numbers, binary blocks), still open when seeded.
+
+# --------------------------------------------------------------------------------------------- categories --
+# action: block or mask by default. overridable: whether a policy, a header or an inline marker may loosen
+# it. Block categories are never overridable; that is checked when the file loads, not left to policy.
+# surrogate: how a masked value is written (email, phone, private_ip, home_path, tag, or none).
+# layers: which detection layers report this category (L1 = this file; L2 = entity model; L3 = prose head).
+categories:
+  secret:
+    title: Credential, key or token
+    action: block
+    overridable: false
+    surrogate: none
+    layers: [L0, L1]
+    rationale: >
+      A detected secret is evidence of a pasted file whose other secrets may match no rule. Masking the one
+      we saw would send the rest.
+  card:
+    title: Payment card number
+    action: block
+    overridable: false
+    surrogate: none
+    layers: [L1]
+    rationale: Nobody's task needs a real card number.
+  patient_or_national_id:
+    title: Patient record or national identifier
+    action: block
+    overridable: false
+    surrogate: none
+    layers: [L1, L2]
+    rationale: >
+      Health and identifier data re-identifies through what is left after masking, so it does not leave.
+  health_prose:
+    title: Health information written as prose
+    action: block
+    overridable: false
+    surrogate: none
+    layers: [L3]
+    rationale: Found by the privacy-gate head, not by patterns; listed so that policy can name it.
+  image_document:
+    title: Inline image or document
+    action: block
+    overridable: false
+    surrogate: none
+    layers: [L0, L1]
+    rationale: >
+      No detector here reads inside an image or a PDF reliably. The provider adapters also block image and
+      document blocks by type; these rules catch the ones pasted as base64 text.
+  email:
+    title: E-mail address
+    action: mask
+    overridable: true
+    surrogate: email
+    layers: [L1]
+  phone:
+    title: Telephone number
+    action: mask
+    overridable: true
+    surrogate: phone
+    layers: [L1]
+  person_name:
+    title: Person's name
+    action: mask
+    overridable: true
+    surrogate: tag
+    label: PERSON
+    layers: [L2]
+  postal_address:
+    title: Postal address
+    action: mask
+    overridable: true
+    surrogate: tag
+    label: ADDRESS
+    layers: [L2]
+  iban:
+    title: Bank account (IBAN)
+    action: mask
+    overridable: true
+    surrogate: tag
+    label: IBAN
+    layers: [L1]
+  private_ip:
+    title: Private network address
+    action: mask
+    overridable: true
+    surrogate: private_ip
+    layers: [L1]
+  home_path:
+    title: User name in a home directory path
+    action: mask
+    overridable: true
+    surrogate: home_path
+    layers: [L1]
+
+# Profiles: which layers run, and what the combination rule does. The cost is the person's choice.
+profiles:
+  lite:
+    layers: [L0, L1]
+    combination: shadow
+    note: default for pip install and the TypeScript engine; structured data only
+  standard:
+    layers: [L0, L1, L2]
+    combination: block
+    note: default for the proxy image; names and addresses become maskable
+  full:
+    layers: [L0, L1, L2, L3]
+    combination: block
+    note: health and clinical prose too
+
+# Four or more distinct maskable categories in one text: what is left after masking is a profile of a person
+# (a name, an address, a phone number and an IBAN together), so the text is blocked instead.
+combination:
+  rule_id: PG-COMBO-001
+  min_distinct: 4
+
+rules:
+  # ------------------------------------------------------------------------------------------- secret ----
+  - id: PG-SECRET-001
+    aliases: [PRIV003]
+    title: Provider API key or access token
+    category: secret
+    rationale: >
+      A key pasted into a prompt is a key that has left the machine. Shapes from the providers this guard
+      fronts (Anthropic, OpenAI, DeepSeek) and the ones most often pasted beside them.
+    patterns:
+      - 'sk-ant-[A-Za-z0-9_-]{16,}'
+      # OpenAI (sk-, sk-proj-, sk-svcacct-, sk-admin-) and DeepSeek (sk- and 32 hex characters).
+      - '\bsk-(?:proj-|svcacct-|admin-)?[A-Za-z0-9_-]{20,}'
+      - '\bgh[pousr]_[A-Za-z0-9]{30,}'
+      - '\bgithub_pat_[A-Za-z0-9_]{30,}'
+      - '\bAKIA[0-9A-Z]{16}\b'
+      - '\bxox[abposr]-[A-Za-z0-9-]{10,}'
+      - '\bhf_[A-Za-z0-9]{30,}'
+    # AWS publishes this exact string as its documentation example. Per span: any other AKIA... still fires,
+    # including one sitting beside it.
+    except:
+      - 'AKIAIOSFODNN7EXAMPLE'
+    fixtures:
+      fail:
+        - 'auth failing with ⟦sk-ant-api03-QQ11ww22EE33rr44TT55yy66⟧'
+        - 'the key is ⟦AKIANOTAREALKEY12345⟧'
+        - 'AKIAIOSFODNN7EXAMPLE is the doc key, ours is ⟦AKIANOTAREALKEY12345⟧'
+        - 'OPENAI_API_KEY is ⟦sk-proj-NOTAREALKEYNOTAREALKEY⟧ for now'
+        - 'clone with ⟦ghp_NOTAREALTOKENNOTAREALTOKEN0000⟧ then push'
+        - 'or ⟦github_pat_NOTAREALTOKEN_NOTAREALTOKEN_0000⟧'
+        - 'slack bot ⟦xoxb-NOT-A-REAL-TOKEN⟧'
+        - 'HF_TOKEN ⟦hf_NOTAREALTOKENNOTAREALTOKEN0000⟧'
+      pass:
+        - 'read the key from ANTHROPIC_API_KEY instead of hardcoding it'
+        - 'we rotate the GitHub PAT every 90 days'
+        - 'is AKIAIOSFODNN7EXAMPLE still valid?'
+        - 'AKIAIOSFODNN7EXAMPLE is AWS documentation, add it to the allowlist'
+        - 'run the sk-learn tutorial first'
+        - 'the ghp_ prefix marks a classic token'
+
+  - id: PG-SECRET-002
+    aliases: [PRIV003]
+    title: Private key block or JSON Web Token
+    category: secret
+    patterns:
+      - '-----BEGIN [A-Z ]*PRIVATE KEY-----'
+      # Two base64url segments that both decode to a JSON object, then the signature (possibly empty).
+      - '\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*'
+    fixtures:
+      fail:
+        - 'the file starts ⟦-----BEGIN RSA PRIVATE KEY-----⟧'
+        # v1 used the jwt.io example; this is an unsigned token for {"alg":"none"} and {"sub":"EXAMPLE"}.
+        - 'token ⟦eyJhbGciOiJub25lIn0.eyJzdWIiOiJFWEFNUExFIn0.⟧ expired'
+      pass:
+        - 'the file starts with a BEGIN PRIVATE KEY line'
+        - 'JWTs start with eyJ because of the JSON brace'
+
+  - id: PG-SECRET-003
+    aliases: [PRIV004]
+    title: Secret assigned in pasted config
+    category: secret
+    rationale: >
+      An assignment with a real value on the right is a leaked secret. An empty value, a placeholder or a
+      read from the environment is a code sample, which is why the value shape is part of the pattern. The
+      span is the value.
+    patterns:
+      - regex: '(?i)\b[a-z0-9_]*(?:password|passwd|secret|api_?key|access_?token|auth_?token|private_?key)[a-z0-9_]*["'']?\s*[:=]\s*["'']?([A-Za-z0-9/+_-]{12,})'
+        group: 1
+    fixtures:
+      fail:
+        - 'DB_PASSWORD=⟦hunter2correcthorsebattery⟧'
+        - 'apiKey: "⟦fake-key-for-tests⟧"'
+        - '{"db_password": "⟦hunter2correcthorsebattery⟧"}'
+        - "{'apiKey': '⟦fake-key-for-tests⟧'}"
+        - '{"client_secret": "⟦not-a-real-secret-value⟧"}'
+        - 'apiKey: "⟦EXAMPLE-NOT-A-KEY⟧"'
+      pass:
+        - 'DB_PASSWORD=${DB_PASSWORD}'
+        - 'api_key = os.environ["API_KEY"]'
+        - 'set password: <redacted>'
+        - '{"password": "${DB_PASSWORD}"}'
+        - '{"api_key": ""}'
+        - 'password_reset_ttl = 3600'
+
+  - id: PG-SECRET-004
+    title: Bearer token
+    category: secret
+    patterns:
+      - regex: '(?i)\bbearer\s+([A-Za-z0-9._~+/-]{20,}=*)'
+        group: 1
+    fixtures:
+      fail:
+        - 'Authorization: Bearer ⟦NOT-A-REAL-TOKEN-EXAMPLE-ONLY⟧'
+      pass:
+        - 'send a Bearer token in the Authorization header'
+        - 'Authorization: Bearer ${TOKEN}'
+
+  - id: PG-SECRET-005
+    title: Password inside a URL
+    category: secret
+    patterns:
+      - regex: '\b[A-Za-z][A-Za-z0-9+.-]{1,20}://[^\s:/@]{1,64}:([^\s/@]{1,128})@'
+        group: 1
+    # Templates and documentation placeholders, judged on the password alone.
+    except:
+      - '\$\{?[A-Za-z_][A-Za-z0-9_]*\}?'
+      - '<[^>]*>'
+      - '\*+'
+      - '[xX]+'
+    except_values: [password, pass, secret, changeme, pw, PASSWORD]
+    fixtures:
+      fail:
+        - 'DATABASE_URL=postgres://app:⟦not-a-real-password⟧@db.internal:5432/app'
+      pass:
+        - 'postgres://app@db.internal/app'
+        - 'postgres://app:${DB_PASSWORD}@db.internal/app'
+        - 'postgres://user:password@localhost/dev'
+        - 'https://example.com:8443/path'
+
+  # --------------------------------------------------------------------------------------------- card ----
+  - id: PG-CARD-001
+    title: Payment card number
+    category: card
+    rationale: >
+      13 to 19 digits starting with a card network's leading digit, in groups or not, passing Luhn.
+      Published test numbers are excepted: they cannot be charged and they appear in every payments
+      tutorial.
+    patterns:
+      - '\b[2-6](?:\d[ -]?){11,17}\d\b'
+    validator: luhn
+    except_values:
+      - '4111111111111111'
+      - '4242424242424242'
+      - '4012888888881881'
+      - '4222222222222'
+      - '5555555555554444'
+      - '5105105105105100'
+      - '2223003122003222'
+      - '378282246310005'
+      - '371449635398431'
+      - '6011111111111117'
+      - '6011000990139424'
+      - '3530111333300000'
+      - '30569309025904'
+      - '38520000023237'
+    fixtures:
+      fail:
+        - 'charge ⟦4000 1234 5678 9017⟧ again'
+        - 'card=⟦4000123456789017⟧'
+      pass:
+        - '4111 1111 1111 1111 is the test Visa'
+        - 'use 4242424242424242 in test mode'
+        - 'order 4000123456789010 shipped'
+        - 'timestamp 1732096800000'
+
+  # -------------------------------------------------------------------------- patient_or_national_id ----
+  - id: PG-PATIENT-001
+    aliases: [PRIV002]
+    title: Labelled patient or medical record number
+    category: patient_or_national_id
+    rationale: >
+      A labelled patient or medical record number is identifiable data by definition. The label is what
+      makes this precise enough to act on; the value is what separates data from a column name. Labels may
+      be spaced, snake_case, camelCase or quoted JSON keys. The span is the value.
+    patterns:
+      - regex: '(?i)\b(?:mrn|patient[\s_-]*(?:id|no|number|#)|medical[\s_-]*record[\s_-]*(?:id|no|number|#)?)["'']?\W{0,5}([A-Za-z]{0,3}\d{4,})'
+        group: 1
+    fixtures:
+      fail:
+        - 'Patient ID: ⟦40219⟧ came back for a review'
+        - 'Patient Jane Smith, MRN: ⟦445621⟧, admitted with chest pain'
+        - 'MRN ⟦98765⟧, Patient John Doe'
+        - '{"patient_id": ⟦40219⟧, "mrn": "⟦98765⟧", "dob": "1979-04-02"}'
+        - 'patient_id: ⟦40219⟧, dateOfBirth: 1979-04-02'
+      pass:
+        - 'add a patientId column to the moles table'
+        - 'the Patient entity needs a nullable dateOfBirth field'
+        - 'add an mrn column to the patients table'
+        - 'MRN lookups are slow on the replica'
+        - 'the NHS app login flow has a bug'
+        - 'rename birthDate to dateOfBirth in the Patient type'
+
+  - id: PG-PATIENT-002
+    aliases: [PRIV002]
+    title: Labelled date of birth
+    category: patient_or_national_id
+    patterns:
+      - regex: '(?i)\b(?:date[\s_-]*of[\s_-]*birth|birth[\s_-]*date|dob)["'']?\W{0,5}(\d{1,4}[-/.]\d{1,2}[-/.]\d{1,4})'
+        group: 1
+    fixtures:
+      fail:
+        - 'DOB: ⟦1979-04-02⟧, presented with a changing lesion'
+        - 'John Doe, DOB ⟦1985-03-20⟧, on Metformin'
+        - 'date of birth ⟦12/05/1960⟧'
+        - 'birth_date = ⟦1960-05-12⟧'
+        - 'patient_id: 40219, dateOfBirth: ⟦1979-04-02⟧'
+        - '{"patient_id": 40219, "mrn": "98765", "dob": "⟦1979-04-02⟧"}'
+      pass:
+        - 'the dob field is a Date, not a string'
+        - 'rename birthDate to dateOfBirth in the Patient type'
+        - 'the Patient entity needs a nullable dateOfBirth field'
+
+  - id: PG-NATID-001
+    aliases: [PRIV002]
+    title: NHS number (labelled, mod 11)
+    category: patient_or_national_id
+    rationale: >
+      Ten digits after an NHS label, with a valid modulus 11 check digit. v1 held any digits after the
+      label; v2 requires the checksum, so a labelled number that could never have been issued is not
+      blocked (fixture below).
+    patterns:
+      - regex: '(?i)\bnhs[\s_-]*(?:no|number|id|#)?["'']?\W{0,5}(\d{3}[ -]?\d{3}[ -]?\d{4})\b'
+        group: 1
+    validator: nhs_mod11
+    fixtures:
+      fail:
+        # NHS Digital's published test patient number.
+        - 'NHS number: ⟦943 476 5919⟧'
+        - 'NHS ⟦943 476 5919⟧ was referred'
+        - '"nhs_number": "⟦9434765919⟧"'
+      pass:
+        - 'the NHS app login flow has a bug'
+        - 'NHS number: 123 456 7890'
+        - 'NHS 111 is the urgent line'
+
+  - id: PG-NATID-002
+    title: US Social Security number (area rules)
+    category: patient_or_national_id
+    rationale: >
+      AAA-GG-SSSS with the SSA's issuing rules (no checksum exists): area not 000, 666 or 900-999, group not
+      00, serial not 0000. Only the hyphenated form; nine bare digits are too often something else.
+    patterns:
+      - '\b\d{3}-\d{2}-\d{4}\b'
+    validator: us_ssn_area
+    fixtures:
+      fail:
+        - 'SSN ⟦123-45-6789⟧ on the form'
+      pass:
+        - 'SSN 666-12-3456 is never issued'
+        - '987-65-4321 is in the advertising range'
+        - 'part 123-00-4567 and 000-12-3456'
+
+  # -------------------------------------------------------------------------------------- image_document --
+  - id: PG-IMAGE-001
+    aliases: [PRIV001]
+    title: Inline image or document payload
+    category: image_document
+    rationale: >
+      A base64 image in a prompt is the exact shape of data a secret scanner will not flag. An unbroken run
+      of 512 base64 characters is an encoded payload: prose and source code break well before that, and
+      minified JavaScript is full of characters outside this class.
+    patterns:
+      - 'data:(?:image/[a-zA-Z0-9.+-]+|application/pdf);base64,[A-Za-z0-9+/=]*'
+      - '[A-Za-z0-9+/]{512,}={0,2}'
+    fixtures:
+      fail:
+        - 'here is the mole photo ⟦data:image/jpeg;base64,/9j/4AAQSkZJRg⟧'
+        - 'the scan ⟦data:application/pdf;base64,JVBERi0xLjQK⟧'
+        - prefix: '⟦'
+          repeat: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk'
+          times: 11
+          suffix: '⟧'
+      pass:
+        - 'how do I render a data URI in React Native?'
+        - 'const hash = "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXo="'
+        - 'the minified bundle is one long line of code but it is not a payload</script>'
+
+  # -------------------------------------------------------------------------------------------- email ----
+  - id: PG-EMAIL-001
+    aliases: [PRIV005]
+    title: E-mail address
+    category: email
+    rationale: >
+      Masked, not blocked: the model can still write "send it to <address>" and the person gets the real
+      address back. Bounded parts (RFC 5321 limits), because unbounded ones backtrack quadratically.
+    patterns:
+      - '\b[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,255}\.[A-Za-z]{2,}\b'
+    except:
+      # RFC 2606 and RFC 6761 reserved names: never delegated, so no message to one reaches a person. The
+      # guard's own surrogates live under masked.invalid for the same reason.
+      - '(?i)[A-Za-z0-9._%+-]{1,64}@(?:[A-Za-z0-9-]{1,63}\.)*example\.(?:com|org|net)'
+      - '(?i)[A-Za-z0-9._%+-]{1,64}@(?:[A-Za-z0-9-]{1,63}\.)*(?:test|invalid|localhost|example)'
+      # Anthropic's documented no-reply address, written into every Claude Code system prompt.
+      - '(?i)noreply@anthropic\.com'
+      # A CLAUDE.md import marker such as `@repo-map.md`, read as an address when a word ends right before
+      # the @. A single-label .md domain is a file name far more often than a Moldovan mailbox.
+      - '(?i)[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9_-]{1,63}\.md'
+    fixtures:
+      fail:
+        - 'the account for ⟦ana.duarte@northgate.internal⟧ cannot log in'
+        - 'cc ⟦j.doe+billing@northgate.internal⟧ and test@example.com'
+      pass:
+        - 'validate the email field with a regex'
+        - 'send it to the support address in the config'
+        - "expect(res.body.email).toBe('test@example.com')"
+        - 'the OpenAPI sample uses jane@example.org'
+        - 'the seed script writes admin@localhost'
+        - 'end the message with Co-Authored-By: Claude <noreply@anthropic.com>'
+        - 'the map is rebuilt by make-maps.sh\n@repo-map.md'
+        - 'reply to m-7qk2fa@masked.invalid'
+
+  # -------------------------------------------------------------------------------------------- phone ----
+  - id: PG-PHONE-001
+    title: Telephone number
+    category: phone
+    rationale: >
+      International (+ or 00), UK-style national (leading 0) and North American shapes, then 10 to 15
+      digits in total and not one digit repeated.
+    patterns:
+      - '(?:\+|\b00)[1-9][0-9 .()-]{6,20}\d'
+      - '\b0\d{2,4}[ -]?\d{3,4}[ -]?\d{3,4}\b'
+      - '(?:\([2-9]\d{2}\) ?|\b[2-9]\d{2}[ .-])\d{3}[ .-]\d{4}\b'
+    validator: phone_digits
+    fixtures:
+      fail:
+        # Ofcom's drama range and the North American 555-01xx range: never allocated to a subscriber.
+        - 'call me on ⟦07700 900123⟧'
+        - 'mobile ⟦+44 7700 900123⟧, office hours only'
+        - 'US office ⟦(202) 555-0123⟧'
+        - 'fax ⟦202-555-0187⟧'
+        - 'from abroad ⟦0044 7700 900123⟧'
+      pass:
+        - 'version 10.0.19045.2965'
+        - 'the build took 0.25 seconds'
+        - 'call 999 or 112'
+        - 'ISBN 978-0-306-40615-7'
+        - 'pid 000 000 0000'
+
+  # --------------------------------------------------------------------------------------------- iban ----
+  - id: PG-IBAN-001
+    title: IBAN (country length and mod 97)
+    category: iban
+    patterns:
+      - '\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]){11,30}\b'
+    validator: iban_mod97
+    fixtures:
+      fail:
+        # The ECBS documentation examples for the UK and Germany.
+        - 'pay ⟦GB82 WEST 1234 5698 7654 32⟧ by Friday'
+        - 'IBAN: ⟦DE89370400440532013000⟧.'
+      pass:
+        - 'IBAN: GB82 WEST 1234 5698 7654 33'
+        - 'the IBAN field is optional'
+
+  # --------------------------------------------------------------------------------------- private_ip ----
+  - id: PG-IP-001
+    title: Private IPv4 address
+    category: private_ip
+    rationale: >
+      RFC 1918, link-local and carrier-grade NAT. A last octet of 0 names a network (10.0.0.0/8 in a
+      firewall rule), not a machine, and is not held. Documentation ranges and public addresses are not
+      private data.
+    patterns:
+      - '\b(?:\d{1,3}\.){3}\d{1,3}\b'
+    validator: private_ipv4
+    fixtures:
+      fail:
+        - 'ssh to ⟦192.168.1.20⟧ first'
+        - 'the pod is on ⟦10.42.0.7⟧'
+        - 'tailnet peer ⟦100.101.102.103⟧'
+      pass:
+        - 'docs use 192.0.2.10'
+        - 'allow 10.0.0.0/8 in the firewall'
+        - 'version 1.2.3.4'
+        - 'localhost is 127.0.0.1'
+        - '8.8.8.8 is public'
+
+  - id: PG-IP-002
+    title: Private IPv6 address
+    category: private_ip
+    patterns:
+      - '(?i)\b(?:f[cd][0-9a-f]{2}|fe[89ab][0-9a-f]):[0-9a-f:]*[0-9a-f]'
+    validator: private_ipv6
+    fixtures:
+      fail:
+        - 'ULA ⟦fd12:3456:789a::1⟧ on the bridge'
+        - 'link ⟦fe80::1⟧%en0'
+      pass:
+        - 'docs use 2001:db8::1'
+        - 'the colour is #fdfdfd'
+
+  # ---------------------------------------------------------------------------------------- home_path ----
+  - id: PG-PATH-001
+    title: User name in a home directory path
+    category: home_path
+    rationale: >
+      A home path names its owner. Only the user segment is reported, so masking keeps the rest of the path
+      and code that reads it still works. Shared, system and placeholder names are not held.
+    patterns:
+      - regex: '/Users/([A-Za-z0-9._-]+)'
+        group: 1
+      - regex: '/home/([A-Za-z0-9._-]+)'
+        group: 1
+      - regex: '\b[A-Za-z]:\\Users\\([A-Za-z0-9._-]+)'
+        group: 1
+    except_values: [Shared, Public, Default, Guest, user, username, USERNAME, you, me, name, yourname,
+                    runner, ubuntu]
+    fixtures:
+      fail:
+        - 'open /Users/⟦ana.duarte⟧/DevBox/app'
+        - 'logs in /home/⟦jdoe⟧/.cache'
+        - 'C:\Users\⟦ana⟧\AppData'
+      pass:
+        - '/Users/Shared/Previously Relocated Items'
+        - 'replace /home/user with your own path'
+        - 'cd ~/projects'
+        - '/home/runner/work on CI'
