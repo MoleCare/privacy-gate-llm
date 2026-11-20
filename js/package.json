@@ -41,7 +41,7 @@
   "scripts": {
     "generate": "node scripts/generate.mjs",
     "build": "node scripts/generate.mjs && tsc -p tsconfig.json",
-    "test": "node --test test/",
+    "test": "node --test test/*.test.mjs",
     "prepack": "npm run build"
   },
   "devDependencies": {
