@@ -1,7 +1,7 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 # Exact pins, kept in step with docker/requirements.txt; Dependabot (pip ecosystem) bumps them. gradio itself is
 # installed by the Space from `sdk_version` in space/README.md, which the pip-audit CI job also audits.
-torch==2.15.0
+torch==2.15.0+cpu
 sentence-transformers==6.3.0
 # Floor for the Pillow advisories fixed in 13.0.0 (gradio is the one that pulls Pillow in; gradio 6.28 capped it below 13).
 pillow==13.0.0
