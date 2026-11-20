@@ -46,6 +46,12 @@ It binds to `127.0.0.1`, has no authentication, and **fails closed**: if the
 embedding endpoint is unreachable it returns `503` with `"hold": true`. Treat any
 non-200 as hold.
 
+Every error body is JSON with an `error` message and a stable `code`: `not_found`
+(404), `bad_content_length`, `bad_json`, `bad_request` (400), `body_too_large`
+(413, the cap is 1 MiB), `backend_unavailable` (503). The reason a backend failed
+is written to the sidecar's log, not to the response, since it can name an
+internal URL. A client that stalls for 10 seconds is disconnected.
+
 ### 3. Port the arithmetic
 
 If you would rather not run Python at all, `model/head-v1.json` is public data:

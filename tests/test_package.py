@@ -6,7 +6,9 @@ from __future__ import annotations
 
 import io
 import json
+import logging
 import math
+import socket
 import sys
 import threading
 import types
@@ -14,12 +16,11 @@ import unittest
 import urllib.request
 from contextlib import redirect_stderr, redirect_stdout
 from http.client import HTTPConnection
-from http.server import ThreadingHTTPServer
 from unittest import mock
 
 from privacy_gate import backends, cli, ollama
 from privacy_gate.gate import Gate, bundled_head_path
-from privacy_gate.serve import make_handler
+from privacy_gate.serve import MAX_BODY, SidecarServer, make_handler
 
 DIMS = 1024
 
@@ -237,19 +238,40 @@ class TestCli(unittest.TestCase):
         self.assertIn("give text", err)
 
 
+class LeakyBackend(FakeEmbedder):
+    """A backend whose error names an internal address, as a real connection error would."""
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        raise ollama.OllamaError("cannot reach http://internal-gpu.test:11434/api/embed: connection refused")
+
+
 class TestSidecar(unittest.TestCase):
-    def _server(self, embedder) -> tuple[ThreadingHTTPServer, HTTPConnection]:
-        server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(Gate.load(embedder=embedder)))
-        server.verbose = False
+    def _server(self, embedder, timeout: float | None = None) -> tuple[SidecarServer, HTTPConnection]:
+        handler = make_handler(Gate.load(embedder=embedder))
+        if timeout is not None:
+            handler.timeout = timeout
+        server = SidecarServer(("127.0.0.1", 0), handler)
         threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
         self.addCleanup(server.shutdown)
         return server, HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
 
-    def _post(self, conn: HTTPConnection, body: bytes | dict) -> tuple[int, dict]:
+    def _post(self, conn: HTTPConnection, body: bytes | dict | list | str | int | None) -> tuple[int, dict]:
         data = body if isinstance(body, bytes) else json.dumps(body).encode()
         conn.request("POST", "/check", data, {"content-type": "application/json"})
         response = conn.getresponse()
+        self.assertEqual(response.getheader("content-type"), "application/json")
         return response.status, json.loads(response.read())
+
+    def _raw(self, server: SidecarServer, request: bytes) -> tuple[int, dict]:
+        """Send bytes http.client would refuse to send, and read one JSON response."""
+        with socket.create_connection(server.server_address, timeout=5) as sock:
+            sock.sendall(request)
+            chunks = []
+            while chunk := sock.recv(65536):
+                chunks.append(chunk)
+        head, _, body = b"".join(chunks).partition(b"\r\n\r\n")
+        return int(head.split()[1]), json.loads(body)
 
     def test_single_and_batch(self) -> None:
         _server, conn = self._server(FakeEmbedder())
@@ -270,15 +292,78 @@ class TestSidecar(unittest.TestCase):
 
     def test_unreachable_model_fails_closed(self) -> None:
         _server, conn = self._server(FakeEmbedder(fail=True))
-        status, body = self._post(conn, {"text": "x"})
+        with self.assertLogs("privacy_gate.serve", logging.ERROR):
+            status, body = self._post(conn, {"text": "x"})
         self.assertEqual(status, 503)
         self.assertTrue(body["hold"])
+        self.assertEqual(body["code"], "backend_unavailable")
+
+    def test_backend_error_is_logged_not_sent(self) -> None:
+        _server, conn = self._server(LeakyBackend())
+        with self.assertLogs("privacy_gate.serve", logging.ERROR) as logs:
+            status, body = self._post(conn, {"text": "her biopsy"})
+        self.assertEqual(status, 503)
+        self.assertIs(body["hold"], True)
+        self.assertEqual(body["code"], "backend_unavailable")
+        self.assertEqual(body["reason"], "gate unavailable, failing closed")
+        self.assertNotIn("internal-gpu", json.dumps(body))
+        self.assertNotIn("OllamaError", json.dumps(body))
+        self.assertIn("internal-gpu.test", logs.output[0])
+        self.assertNotIn("biopsy", logs.output[0])
 
     def test_bad_bodies(self) -> None:
         _server, conn = self._server(FakeEmbedder())
-        self.assertEqual(self._post(conn, b"not json")[0], 400)
+        self.assertEqual(self._post(conn, b"not json"), (400, {"error": "body must be JSON", "code": "bad_json"}))
+        self.assertEqual(self._post(conn, b"\xff\xfe not utf-8")[1]["code"], "bad_json")
         self.assertEqual(self._post(conn, {"texts": "one"})[0], 400)
+        self.assertEqual(self._post(conn, {"texts": ["a", 1]})[0], 400)
+        self.assertEqual(self._post(conn, {"text": 7})[0], 400)
         self.assertEqual(self._post(conn, {})[0], 400)
+
+    def test_json_that_is_not_an_object(self) -> None:
+        _server, conn = self._server(FakeEmbedder())
+        for body in (["her biopsy"], 42, "her biopsy", None, True):
+            with self.subTest(body=body):
+                status, payload = self._post(conn, body)
+                self.assertEqual(status, 400)
+                self.assertEqual(payload["code"], "bad_request")
+        # the connection is still usable afterwards: nothing crashed
+        self.assertEqual(self._post(conn, {"text": "fine"})[0], 200)
+
+    def test_oversized_body(self) -> None:
+        server, _conn = self._server(FakeEmbedder())
+        status, body = self._raw(
+            server, f"POST /check HTTP/1.1\r\nHost: x\r\nContent-Length: {MAX_BODY + 1}\r\n\r\n{{}}".encode()
+        )
+        self.assertEqual((status, body["code"]), (413, "body_too_large"))
+
+    def test_bad_content_length(self) -> None:
+        server, _conn = self._server(FakeEmbedder())
+        for value in ("abc", "-5", "1.5", "", "\xb2"):
+            with self.subTest(value=value):
+                status, body = self._raw(
+                    server, f"POST /check HTTP/1.1\r\nHost: x\r\nContent-Length: {value}\r\n\r\n".encode("latin-1")
+                )
+                self.assertEqual((status, body["code"]), (400, "bad_content_length"))
+        status, body = self._raw(server, b"POST /check HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n")
+        self.assertEqual((status, body["code"]), (400, "bad_content_length"))
+
+    def test_unknown_paths(self) -> None:
+        _server, conn = self._server(FakeEmbedder())
+        conn.request("POST", "/nope", b"{}")
+        response = conn.getresponse()
+        self.assertEqual((response.status, json.loads(response.read())["code"]), (404, "not_found"))
+        conn.request("GET", "/check")
+        response = conn.getresponse()
+        self.assertEqual((response.status, json.loads(response.read())["code"]), (404, "not_found"))
+
+    def test_slow_client_is_let_go(self) -> None:
+        self.assertEqual(make_handler(Gate.load(embedder=FakeEmbedder())).timeout, 10.0)
+        server, _conn = self._server(FakeEmbedder(), timeout=0.2)
+        with socket.create_connection(server.server_address, timeout=5) as sock:
+            # promise ten bytes and send none: the server must close the socket, not wait forever
+            sock.sendall(b"POST /check HTTP/1.1\r\nHost: x\r\nContent-Length: 10\r\n\r\n")
+            self.assertEqual(sock.recv(1), b"")
 
 
 if __name__ == "__main__":
