@@ -1,0 +1,183 @@
+name: Live monitor
+
+# Tests what users get, not what is in the checkout: the latest release on PyPI in a fresh venv, the `latest`
+# image on GHCR, the demo on Hugging Face (and its GitHub Pages mirror once Pages is enabled), and once a day the
+# Homebrew formula. Each check is its own step, so the run summary says which one broke.
+#
+# A failed scheduled run opens an issue labelled `live-monitor`, or comments on the open one; the next fully green
+# run closes it. Manual runs report in the summary only, so trying the workflow never files an issue.
+#
+# The check logic and the invented samples are in scripts/live_smoke.py (unit-tested in tests/).
+
+on:
+  schedule:
+    - cron: '23 0,6,12 * * *'   # every 6 h ...
+    - cron: '23 18 * * *'       # ... and this one also runs the Homebrew check (macOS minutes cost 10x)
+  workflow_dispatch:
+    inputs:
+      brew:
+        description: Also run the Homebrew check on macOS
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-monitor
+  cancel-in-progress: false
+
+env:
+  OLLAMA_IMAGE: ollama/ollama:0.40.16
+  GATE_IMAGE: ghcr.io/yauhenbichel/privacy-gate:latest
+  SPACE_PAGE: https://yauhenbichel-privacy-gate-llm-demo.static.hf.space/
+  SPACE_CARD: https://huggingface.co/spaces/YauhenBichel/privacy-gate-llm-demo
+  PAGE_MARKER: Must this stay on this machine?
+
+jobs:
+  pypi:
+    name: PyPI package (fresh venv)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+      # The package's default backend is an Ollama it does not install; this is the setup the README documents.
+      - name: Start Ollama with bge-m3
+        run: |
+          docker run -d --name ollama -p 127.0.0.1:11434:11434 "$OLLAMA_IMAGE"
+          for _ in $(seq 30); do curl -fs http://127.0.0.1:11434/api/version && break; sleep 2; done
+          docker exec ollama ollama pull bge-m3
+      - name: pip install molecare-privacy-gate from PyPI
+        id: install
+        run: |
+          python -m venv /tmp/fresh
+          /tmp/fresh/bin/pip install -q --no-cache-dir molecare-privacy-gate
+          /tmp/fresh/bin/pip show molecare-privacy-gate | head -2
+      - name: "CLI smoke: privacy-gate info and check"
+        id: cli
+        run: python scripts/live_smoke.py cli --bin /tmp/fresh/bin/privacy-gate --url http://127.0.0.1:11434
+      # -I: the interpreter imports privacy_gate from the venv, never from this checkout.
+      - name: "API smoke: Gate.load and decide_many"
+        id: api
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: /tmp/fresh/bin/python -I scripts/live_smoke.py api --url http://127.0.0.1:11434
+
+  docker:
+    name: GHCR image
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: docker pull and run the latest image
+        run: |
+          docker pull -q "$GATE_IMAGE"
+          docker image inspect "$GATE_IMAGE" --format 'image {{.Id}} created {{.Created}}'
+          docker run -d --name gate -p 127.0.0.1:8231:8231 "$GATE_IMAGE"
+      # The encoder loads at start (about a minute on a runner); /health answers once it can score.
+      - name: "Health and classify smoke: GET /health, POST /check"
+        run: python3 scripts/live_smoke.py sidecar --url http://127.0.0.1:8231 --wait 300
+      - name: Container log on failure
+        if: failure()
+        run: docker logs --tail 100 gate
+
+  demo:
+    name: Demo pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Hugging Face Space card answers 200
+        run: python3 scripts/live_smoke.py page --url "$SPACE_CARD" --expect privacy-gate
+      # The static app itself, and the head it scores with must be the repository's, byte for byte.
+      - name: "Hugging Face Space app: page and head-v1.json"
+        if: ${{ !cancelled() }}
+        run: |
+          python3 scripts/live_smoke.py page --url "$SPACE_PAGE" --expect "$PAGE_MARKER" \
+            --head-url "${SPACE_PAGE}head-v1.json" --head-file model/head-v1.json
+      - name: "GitHub Pages mirror: page and head-v1.json"
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! url=$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq .html_url 2>/dev/null); then
+            echo "::notice title=Pages not enabled::GitHub Pages is not enabled for this repository; skipping the mirror check."
+            exit 0
+          fi
+          url="${url%/}/"
+          python3 scripts/live_smoke.py page --url "$url" --expect "$PAGE_MARKER" \
+            --head-url "${url}head-v1.json" --head-file model/head-v1.json
+
+  brew:
+    name: Homebrew formula (daily)
+    if: ${{ github.event.schedule == '23 18 * * *' || inputs.brew }}
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: brew install yauhenbichel/tap/privacy-gate
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: '1'
+          HOMEBREW_NO_INSTALL_CLEANUP: '1'
+        run: brew install yauhenbichel/tap/privacy-gate
+      # No encoder on the macOS runner: `info` must load the bundled head, and `check` with nothing to embed
+      # must fail closed (exit 1, "treat as hold"), never answer send.
+      - name: "CLI smoke: info, and check fails closed without an encoder"
+        run: |
+          privacy-gate info | python3 -c "import json,sys; i=json.load(sys.stdin); assert i['dimensions']==1024, i; print('head', i['head_sha256'][:16])"
+          set +e
+          privacy-gate check --url http://127.0.0.1:9 "Synthetic test patient Jane Example has type 2 diabetes."
+          code=$?
+          set -e
+          [ "$code" -eq 1 ] || { echo "::error::expected exit 1 (fail closed), got $code"; exit 1; }
+          echo "failed closed as it should"
+      - name: brew test privacy-gate
+        run: brew test yauhenbichel/tap/privacy-gate
+
+  report:
+    name: Open, update or close the live-monitor issue
+    needs: [pypi, docker, demo, brew]
+    if: ${{ always() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      PYPI: ${{ needs.pypi.result }}
+      DOCKER: ${{ needs.docker.result }}
+      DEMO: ${{ needs.demo.result }}
+      BREW: ${{ needs.brew.result }}
+    steps:
+      - name: File or close the issue
+        run: |
+          table=$(printf '| check | result |\n|---|---|\n| PyPI package | %s |\n| GHCR image | %s |\n| demo pages | %s |\n| Homebrew (daily) | %s |\n' \
+            "$PYPI" "$DOCKER" "$DEMO" "$BREW")
+          failed=false
+          for r in "$PYPI" "$DOCKER" "$DEMO" "$BREW"; do
+            case "$r" in failure|cancelled) failed=true ;; esac
+          done
+          open=$(gh issue list --label live-monitor --state open --json number --jq '.[0].number // empty')
+          if [ "$failed" = true ]; then
+            body=$(printf 'The live monitor failed at %s.\n\n%s\n\nRun: %s\n' "$(date -u +%FT%TZ)" "$table" "$RUN_URL")
+            if [ -n "$open" ]; then
+              gh issue comment "$open" --body "$body"
+              echo "commented on #$open"
+            else
+              gh label create live-monitor --color B60205 --description "Opened and closed by the live monitor" 2>/dev/null || true
+              gh issue create --title "Live monitor: a released artefact is failing" --label live-monitor --body "$body"
+            fi
+            exit 0
+          fi
+          if [ -n "$open" ]; then
+            gh issue close "$open" --comment "$(printf 'Green again at %s.\n\n%s\n\nRun: %s\n' "$(date -u +%FT%TZ)" "$table" "$RUN_URL")"
+            echo "closed #$open"
+          else
+            echo "all green; no open issue"
+          fi
