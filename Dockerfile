@@ -21,8 +21,10 @@ FROM python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb
 ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 HF_HOME=/opt/hf
 WORKDIR /src
 COPY docker/requirements.txt docker/requirements.txt
-RUN pip install --index-url https://download.pytorch.org/whl/cpu "$(grep -E '^torch==' docker/requirements.txt)" \
+# Only torch comes from the PyTorch index (--no-deps); its dependencies are pinned in the file like everything else.
+RUN pip install --no-deps --index-url https://download.pytorch.org/whl/cpu "$(grep -E '^torch==' docker/requirements.txt)" \
  && pip install --no-deps -r docker/requirements.txt \
+ && pip check \
  && python -c "import torch; assert torch.version.cuda is None, torch.version.cuda"
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-m3', device='cpu')"
 COPY pyproject.toml README.md LICENSE NOTICE CHANGELOG.md ./
