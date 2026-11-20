@@ -300,10 +300,20 @@ measurements; these are the useful corners:
 | +0.121 | 99.1% | 5.3% | the default in `model/head-v1.json` |
 | +0.881 | 90.1% | 2.1% | only where friction costs more than a leak: 11 of 111 leak here |
 
-Override it per caller rather than editing the file:
+Override it per caller rather than editing the shipped file. The sidecar and the CLI have no threshold
+option; every answer carries the score, so the caller compares it against its own threshold:
 
 ```bash
-python3 scripts/serve.py --threshold -1.455
+privacy-gate serve &
+curl -s localhost:8231/check -d '{"text":"her biopsy is booked for the 20th"}' \
+  | python3 -c 'import json,sys; print("hold" if json.load(sys.stdin)["score"] > -1.455 else "send")'
+```
+
+Or serve a copy of the head with its own threshold (`--head` reads the threshold from the file):
+
+```bash
+python3 -c 'import json; h = json.load(open("model/head-v1.json")); h["threshold"] = -1.455; json.dump(h, open("head-strict.json", "w"))'
+privacy-gate serve --head head-strict.json
 ```
 
 Those numbers come from 206 examples written by one person. Treat them as a

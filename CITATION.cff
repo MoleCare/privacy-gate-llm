@@ -8,6 +8,7 @@ type: software
 license: Apache-2.0
 repository-code: "https://github.com/YauhenBichel/privacy-gate-llm"
 url: "https://huggingface.co/YauhenBichel/privacy-gate-llm"
+repository-artifact: "https://pypi.org/project/molecare-privacy-gate/"
 version: 1.0.1
 date-released: 2026-11-20
 keywords:
@@ -17,6 +18,9 @@ keywords:
   - guardrails
   - llm-router
   - embeddings
+  - llm-guardrail
+  - prompt-privacy
+  - data-loss-prevention
 abstract: >-
   A logistic head of 1,024 weights over BAAI/bge-m3 embeddings that answers one question about a text,
   "must this stay on this machine?", and may only ever add a hold behind whatever deterministic rules already
