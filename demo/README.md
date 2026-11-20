@@ -48,6 +48,6 @@ precomputed and committed.
 - The same page on GitHub Pages: [yauhenbichel.github.io/privacy-gate-llm](https://yauhenbichel.github.io/privacy-gate-llm/)
 - Model: [YauhenBichel/privacy-gate-llm](https://huggingface.co/YauhenBichel/privacy-gate-llm) ·
   data: [YauhenBichel/privacy-gate-gold](https://huggingface.co/datasets/YauhenBichel/privacy-gate-gold) ·
-  `pip install molecare-privacy-gate`
+  `pip install privacy-gate-llm`
 
 A `send` is not an assurance that text is safe. Not production-validated. Not a medical device.

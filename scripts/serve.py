@@ -5,7 +5,7 @@
     python3 scripts/serve.py --head model/head-v1.json
 
 It is the same code as `privacy-gate serve` (src/privacy_gate/serve.py) and takes the same options. It
-imports the installed package: `pip install -e .` in a checkout, or `pip install molecare-privacy-gate`.
+imports the installed package: `pip install -e .` in a checkout, or `pip install privacy-gate-llm`.
 Prefer `privacy-gate serve` or `python -m privacy_gate serve`.
 """
 

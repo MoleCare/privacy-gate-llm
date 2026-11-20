@@ -4,6 +4,21 @@ All notable changes. The head file has its own history in `docs/JOURNAL.md`; a n
 
 ## Unreleased
 
+Renamed on PyPI: the distribution is now **`privacy-gate-llm`**, the same name as the repository, without the
+MoleCare brand. 1.0.0 and 1.0.1 stay on PyPI as `molecare-privacy-gate`; later releases are published as
+`privacy-gate-llm` only.
+
+- `pip install privacy-gate-llm` (and `privacy-gate-llm[local]`). The `privacy-gate` command, the `privacy_gate`
+  import, the container image `ghcr.io/yauhenbichel/privacy-gate` and the head are unchanged.
+- Moving from the old name: `pip uninstall molecare-privacy-gate && pip install privacy-gate-llm`. Both install
+  the same `privacy_gate` package, so do not keep both in one environment.
+- Project URLs: `Homepage` is now the GitHub Pages site, https://yauhenbichel.github.io/privacy-gate-llm/ (also
+  the `url` in `CITATION.cff`); the Hugging Face Space stays as `Demo`.
+- Docs: README, `docs/INTEGRATION.md`, `docs/TAXONOMY.md` and the `Gate` docstring name the rules the guard
+  loads, `rules/privacy-v2.yaml` (compiled to `src/privacy_gate/guard/privacy-v2.json`), instead of `rules/v1.yaml`.
+- The live monitor installs `privacy-gate-llm`, and falls back to the former name until the first release under
+  the new one is on PyPI.
+
 Package split: the wheel carries the runtime only.
 
 - **Breaking for anyone importing the training code from the wheel.** `privacy_gate.calibrate`, `.evaluate`,

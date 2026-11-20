@@ -2,7 +2,11 @@
 
 **[Try it in your browser](https://huggingface.co/spaces/YauhenBichel/privacy-gate-llm-demo)** (nothing you type
 leaves the page; mirror on [GitHub Pages](https://yauhenbichel.github.io/privacy-gate-llm/)) ·
-`pip install molecare-privacy-gate` · `docker run ghcr.io/yauhenbichel/privacy-gate`
+`pip install privacy-gate-llm` · `docker run ghcr.io/yauhenbichel/privacy-gate`
+
+> Formerly published as `molecare-privacy-gate` (1.0.0 and 1.0.1). Same code, same `privacy-gate` command and
+> `privacy_gate` import; new releases go to `privacy-gate-llm` only. To move: `pip uninstall molecare-privacy-gate`
+> then `pip install privacy-gate-llm`.
 
 **privacy-gate is an open-source PII and PHI detection gate for LLM prompts.** Before a prompt leaves your machine
 for a cloud model (Claude, OpenAI, DeepSeek), it answers one question: must this text stay local? It catches health
@@ -11,7 +15,7 @@ developers who run a **local LLM router** and want a **prompt privacy** check or
 cloud: data loss prevention for prompts, as a second gate that may only ever add a hold. A small model, `bge-m3` plus
 1,024 weights, that runs on a CPU, with a Python package, a CLI, an HTTP sidecar and a Docker image.
 
-[![PyPI](https://img.shields.io/pypi/v/molecare-privacy-gate.svg)](https://pypi.org/project/molecare-privacy-gate/)
+[![PyPI](https://img.shields.io/pypi/v/privacy-gate-llm.svg)](https://pypi.org/project/privacy-gate-llm/)
 [![GHCR](https://img.shields.io/badge/ghcr.io-privacy--gate-2496ED?logo=docker&logoColor=white)](https://github.com/YauhenBichel/privacy-gate-llm/pkgs/container/privacy-gate)
 [![PR checks](https://github.com/YauhenBichel/privacy-gate-llm/actions/workflows/pr-checks.yml/badge.svg?branch=main)](https://github.com/YauhenBichel/privacy-gate-llm/actions/workflows/pr-checks.yml)
 [![Hugging Face Space](https://img.shields.io/badge/%F0%9F%A4%97%20Space-try%20it-yellow)](https://huggingface.co/spaces/YauhenBichel/privacy-gate-llm-demo)
@@ -36,8 +40,8 @@ A very small model that answers one question about a piece of text:
 > diagnose.
 
 It exists to sit in front of [`llm-harness`](https://github.com/YauhenBichel/llm-harness)
-as a **second** gate, behind the regex ruleset in `rules/v1.yaml`, and to catch what
-patterns cannot see.
+as a **second** gate, behind the regex ruleset in `rules/privacy-v2.yaml` (compiled to
+`src/privacy_gate/guard/privacy-v2.json`, which is what the guard loads), and to catch what patterns cannot see.
 
 ## What kind of model this is
 
@@ -104,14 +108,14 @@ loaded shared box, and 18 ms per text when batched.
 ## Install
 
 ```bash
-pip install molecare-privacy-gate   # standard library only; the embedding comes from an endpoint you run
+pip install privacy-gate-llm        # standard library only; the embedding comes from an endpoint you run
 ollama pull bge-m3                  # the default backend: Ollama on 127.0.0.1:11434
 
 privacy-gate check "the woman from Tuesday's clinic has a 7mm lesion on her shoulder"
 # hold  score=6.7200 threshold=0.1209 margin=6.5991
 ```
 
-To install the latest `main` instead: `pip install "molecare-privacy-gate @ git+https://github.com/YauhenBichel/privacy-gate-llm"`.
+To install the latest `main` instead: `pip install "privacy-gate-llm @ git+https://github.com/YauhenBichel/privacy-gate-llm"`.
 
 Three places the embedding can come from, one head:
 
@@ -119,7 +123,7 @@ Three places the embedding can come from, one head:
 |---|---|---|
 | `ollama` (default) | `privacy-gate check --backend ollama --url http://127.0.0.1:11434 "..."` | Ollama with `bge-m3` |
 | `openai` | `privacy-gate check --backend openai --url http://127.0.0.1:11500 "..."` | any OpenAI-compatible `/v1/embeddings`: a gateway, vLLM, LM Studio, llama.cpp; a key via `PRIVACY_GATE_API_KEY` if it wants one |
-| `local` | `pip install 'molecare-privacy-gate[local]'` then `privacy-gate check --backend local "..."` | sentence-transformers; downloads `BAAI/bge-m3` (2.2 GB) once; CPU is enough |
+| `local` | `pip install 'privacy-gate-llm[local]'` then `privacy-gate check --backend local "..."` | sentence-transformers; downloads `BAAI/bge-m3` (2.2 GB) once; CPU is enough |
 
 The head was fitted on Ollama's output. Whether the other two backends give the same verdicts is measured, not
 assumed: `training/backends_agree.py`, result in `docs/JOURNAL.md`. Every backend must return unit vectors; the
@@ -304,8 +308,9 @@ Mentioned elsewhere:
   [AI Safety Radar](https://nrc-cnrc.github.io/ai-safety-radar-securite-ia/)
   covered the v1.0.0 release in its
   [9 October 2026 digest](https://github.com/nrc-cnrc/ai-safety-radar-securite-ia/blob/main/digests/2026-10-09/safety-community.md).
-- On PyPI as [`molecare-privacy-gate`](https://pypi.org/project/molecare-privacy-gate/)
-  since 8 October 2026.
+- On PyPI as [`privacy-gate-llm`](https://pypi.org/project/privacy-gate-llm/), and
+  since 8 October 2026 under its former name
+  [`molecare-privacy-gate`](https://pypi.org/project/molecare-privacy-gate/).
 
 If you use it somewhere, open an issue and it goes on this list.
 

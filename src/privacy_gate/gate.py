@@ -12,7 +12,8 @@
 
 Two things this deliberately does not do.
 
-It does not replace `llm-harness/rules/v1.yaml`. The rules run first and keep
+It does not replace the pattern rules (`rules/privacy-v2.yaml`, loaded as `guard/privacy-v2.json`; in
+llm-harness, its `rules/v1.yaml` until the cut-over). The rules run first and keep
 precedence, and this may only ever **add** a hold. A `send` from here is not an
 assurance that the text is safe; it is the absence of a second opinion.
 

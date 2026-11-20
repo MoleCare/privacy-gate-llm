@@ -50,12 +50,19 @@ jobs:
           docker run -d --name ollama -p 127.0.0.1:11434:11434 "$OLLAMA_IMAGE"
           for _ in $(seq 30); do curl -fs http://127.0.0.1:11434/api/version && break; sleep 2; done
           docker exec ollama ollama pull bge-m3
-      - name: pip install molecare-privacy-gate from PyPI
+      # The distribution was renamed from molecare-privacy-gate (1.0.0, 1.0.1). Until the first release under the
+      # new name is on PyPI, fall back to the former one with a warning, so the monitor does not file an issue.
+      - name: pip install privacy-gate-llm from PyPI
         id: install
         run: |
           python -m venv /tmp/fresh
-          /tmp/fresh/bin/pip install -q --no-cache-dir molecare-privacy-gate
-          /tmp/fresh/bin/pip show molecare-privacy-gate | head -2
+          if /tmp/fresh/bin/pip install -q --no-cache-dir privacy-gate-llm; then
+            /tmp/fresh/bin/pip show privacy-gate-llm | head -2
+          else
+            echo "::warning::privacy-gate-llm is not on PyPI yet; checking the former name molecare-privacy-gate"
+            /tmp/fresh/bin/pip install -q --no-cache-dir molecare-privacy-gate
+            /tmp/fresh/bin/pip show molecare-privacy-gate | head -2
+          fi
       - name: "CLI smoke: privacy-gate info and check"
         id: cli
         run: python scripts/live_smoke.py cli --bin /tmp/fresh/bin/privacy-gate --url http://127.0.0.1:11434

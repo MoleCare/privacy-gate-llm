@@ -43,7 +43,7 @@ stays the live source for yserver and a fix lands there first.
 
 - One rules file and one conformance suite, read by the Python engine here, the TypeScript engine (P8) and
   llm-harness after P10. A disagreement about a rule is settled by reading the YAML.
-- `pip install molecare-privacy-gate` keeps zero dependencies.
+- `pip install privacy-gate-llm` keeps zero dependencies.
 - Generated files are checked in and CI fails when they are stale; the generator needs PyYAML.
 - A rule that fires less is a major version, so consumers take such bumps by reviewed pull request only.
 - The repository's scope widens from "a small model" to "a small model and a guard"; the README and
