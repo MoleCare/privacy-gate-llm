@@ -1,8 +1,13 @@
 name: Space
 
 # Pushes `space-static/` (the browser-side demo) to the Hugging Face Space when it changes on main. `space/` is the
-# Gradio variant for an account with CPU quota; switch the folder below to use it. Needs the repository secret HF_TOKEN
-# (a write token of the Space's owner). Without the secret the job is skipped, not failed.
+# Gradio variant for an account with CPU quota; switch the folder below to use it.
+#
+# Configuration: the repository variable HF_SPACE (owner/name of the Space) and the repository secret HF_TOKEN (a
+# write token of the Space's owner).
+#   - HF_SPACE unset: the demo is not published from this repository; the job leaves a notice and succeeds.
+#   - HF_SPACE set but HF_TOKEN missing, the upload failing, or the Space not serving the head afterwards: the job
+#     fails. A configured sync that silently does nothing is how the Space drifted from main before.
 
 on:
   push:
@@ -13,27 +18,74 @@ on:
 permissions:
   contents: read
 
+# Two syncs must not interleave their commits on the Space.
+concurrency:
+  group: space-sync
+  cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
-    if: ${{ vars.HF_SPACE != '' }}
     steps:
+      - name: Is the sync configured?
+        id: config
+        env:
+          HF_SPACE: ${{ vars.HF_SPACE }}
+          HAS_TOKEN: ${{ secrets.HF_TOKEN != '' }}
+        run: |
+          if [ -z "$HF_SPACE" ]; then
+            echo "::notice title=Space sync not configured::Set the repository variable HF_SPACE (and the secret HF_TOKEN) to publish space-static/ to a Hugging Face Space."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$HAS_TOKEN" != "true" ]; then
+            echo "::error title=Space sync misconfigured::HF_SPACE is set to $HF_SPACE but the repository secret HF_TOKEN is missing."
+            exit 1
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.config.outputs.enabled == 'true'
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        if: steps.config.outputs.enabled == 'true'
         with:
           python-version: '3.12'
-      - run: pip install -q huggingface_hub
+      - name: Install huggingface_hub (pinned)
+        if: steps.config.outputs.enabled == 'true'
+        run: pip install -q huggingface_hub==2.4.0
+
+      # delete_patterns names only the files this repository publishes, so a file that exists on the Space and
+      # not here (anything added on the Hub) survives the sync. `.gitattributes` is never deleted by the hub
+      # client either way; README.md is always re-uploaded, so it is not listed.
       - name: Upload space-static/ to the Space
+        if: steps.config.outputs.enabled == 'true'
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_SPACE: ${{ vars.HF_SPACE }}
         run: |
-          [ -n "$HF_TOKEN" ] || { echo "no HF_TOKEN secret: skipping"; exit 0; }
           python - <<'PY'
           import os
           from huggingface_hub import HfApi
           api = HfApi(token=os.environ["HF_TOKEN"])
-          api.upload_folder(folder_path="space-static", repo_id=os.environ["HF_SPACE"], repo_type="space",
-                            commit_message="space: sync from main", delete_patterns=["*"])
-          print("uploaded")
+          info = api.upload_folder(
+              folder_path="space-static",
+              repo_id=os.environ["HF_SPACE"],
+              repo_type="space",
+              commit_message=f"space: sync from {os.environ['GITHUB_REPOSITORY']}@{os.environ['GITHUB_SHA'][:12]}",
+              delete_patterns=["index.html", "head-v*.json", "explorer/*"],
+          )
+          print("uploaded:", info.commit_url)
           PY
+
+      - name: The Space serves the head that was just uploaded
+        if: steps.config.outputs.enabled == 'true'
+        env:
+          HF_SPACE: ${{ vars.HF_SPACE }}
+        run: |
+          want=$(sha256sum space-static/head-v1.json | cut -d' ' -f1)
+          got=$(curl -fsSL --retry 5 --retry-delay 10 "https://huggingface.co/spaces/$HF_SPACE/resolve/main/head-v1.json" | sha256sum | cut -d' ' -f1)
+          if [ "$want" != "$got" ]; then
+            echo "::error title=Space out of sync::head-v1.json on $HF_SPACE is $got, expected $want"
+            exit 1
+          fi
+          echo "head-v1.json on $HF_SPACE matches ($want)"
