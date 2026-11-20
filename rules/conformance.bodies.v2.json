@@ -1,0 +1,507 @@
+{
+ "schema": "privacy-gate-body-conformance/2",
+ "note": "Whole request bodies through the guard, lite profile, enforce mode (architecture review R5). Hand-written; the #32 cases mirror llm-harness pull request #32's body tests. `deep: n` means a body of n nested arrays; `base64: text` means every \"{base64}\" in the body is replaced by the base64 of that text (so no encoded literal sits in the repository). `rules` lists rule ids that must fire (aliases included); an empty list means none. All values are fake.",
+ "profile": "lite",
+ "cases": [
+  {
+   "name": "clean chat (Anthropic)",
+   "body": {
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "explain the difference between a list and a tuple"
+     }
+    ]
+   },
+   "expect": {
+    "action": "allow",
+    "rules": []
+   }
+  },
+  {
+   "name": "clean chat (OpenAI)",
+   "wire": "openai",
+   "body": {
+    "model": "m",
+    "messages": [
+     {
+      "role": "system",
+      "content": "be brief"
+     },
+     {
+      "role": "user",
+      "content": "what is 2 + 2"
+     }
+    ]
+   },
+   "expect": {
+    "action": "allow",
+    "rules": []
+   }
+  },
+  {
+   "name": "#32: password key in a tool_use input",
+   "body": {
+    "model": "m",
+    "messages": [
+     {
+      "role": "assistant",
+      "content": [
+       {
+        "type": "tool_use",
+        "id": "t1",
+        "name": "login",
+        "input": {
+         "user": "ana",
+         "password": "EXAMPLE-NOT-A-KEY"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "action": "block",
+    "rules": [
+     "PG-SECRET-003",
+     "PRIV004"
+    ],
+    "paths": [
+     "messages.0.content.0.input.password"
+    ]
+   }
+  },
+  {
+   "name": "#32: patient_id as a number",
+   "body": {
+    "model": "m",
+    "metadata": {
+     "patient_id": 40219
+    },
+    "messages": [
+     {
+      "role": "user",
+      "content": "hi"
+     }
+    ]
+   },
+   "expect": {
+    "action": "block",
+    "rules": [
+     "PG-PATIENT-001",
+     "PRIV002"
+    ],
+    "paths": [
+     "metadata.patient_id"
+    ]
+   }
+  },
+  {
+   "name": "#32: base64 image block",
+   "body": {
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": [
+       {
+        "type": "text",
+        "text": "what is this"
+       },
+       {
+        "type": "image",
+        "source": {
+         "type": "base64",
+         "media_type": "image/png",
+         "data": "aGVsbG8gd29ybGQ="
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "action": "block",
+    "rules": [
+     "PG-BINARY-001",
+     "PRIV-BINARY"
+    ],
+    "paths": [
+     "messages.0.content.1"
+    ]
+   }
+  },
+  {
+   "name": "#32: URL image block",
+   "body": {
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": [
+       {
+        "type": "image",
+        "source": {
+         "type": "url",
+         "url": "https://img.example.org/a.png"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "action": "block",
+    "rules": [
+     "PG-BINARY-001",
+     "PRIV-BINARY"
+    ]
+   }
+  },
+  {
+   "name": "#32: OpenAI image_url part",
+   "wire": "openai",
+   "body": {
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": [
+       {
+        "type": "image_url",
+        "image_url": {
+         "url": "https://img.example.org/a.png"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "action": "block",
+    "rules": [
+     "PG-BINARY-001",
+     "PRIV-BINARY"
+    ]
+   }
+  },
+  {
+   "name": "#32: PDF document block",
+   "body": {
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": [
+       {
+        "type": "document",
+        "source": {
+         "type": "base64",
+         "media_type": "application/pdf",
+         "data": "JVBERi0xLjQK"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "action": "block",
+    "rules": [
+     "PG-BINARY-001",
+     "PRIV-BINARY"
+    ]
+   }
+  },
+  {
+   "name": "#32: file document block",
+   "body": {
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": [
+       {
+        "type": "document",
+        "source": {
+         "type": "file",
+         "file_id": "file_example"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "action": "block",
+    "rules": [
+     "PG-BINARY-001",
+     "PRIV-BINARY"
+    ]
+   }
+  },
+  {
+   "name": "#32: text-source document is read, not held",
+   "body": {
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": [
+       {
+        "type": "document",
+        "source": {
+         "type": "text",
+         "media_type": "text/plain",
+         "data": "meeting notes: ship on Friday"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "action": "allow",
+    "rules": []
+   }
+  },
+  {
+   "name": "#32: JSON text with a password in a tool_result",
+   "body": {
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": [
+       {
+        "type": "tool_result",
+        "tool_use_id": "t1",
+        "content": "{\"password\": \"EXAMPLE-NOT-A-KEY\"}"
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "action": "block",
+    "rules": [
+     "PG-SECRET-003",
+     "PRIV004"
+    ]
+   }
+  },
+  {
+   "name": "#32: nesting deeper than the cap",
+   "deep": 70,
+   "expect": {
+    "action": "block",
+    "rules": [
+     "PG-SCAN-001",
+     "PRIV-SCAN"
+    ],
+    "fail_closed": true
+   }
+  },
+  {
+   "name": "card number blocks",
+   "body": {
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "charge 4000 1234 5678 9017 again"
+     }
+    ]
+   },
+   "expect": {
+    "action": "block",
+    "rules": [
+     "PG-CARD-001"
+    ]
+   }
+  },
+  {
+   "name": "documented test card is allowed",
+   "body": {
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "use 4111111111111111 in the sandbox"
+     }
+    ]
+   },
+   "expect": {
+    "action": "allow",
+    "rules": []
+   }
+  },
+  {
+   "name": "email and private address are masked",
+   "body": {
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "mail ana.duarte@northgate.internal from 10.42.0.7"
+     }
+    ]
+   },
+   "expect": {
+    "action": "mask",
+    "rules": [
+     "PG-EMAIL-001",
+     "PRIV005",
+     "PG-IP-001"
+    ],
+    "categories": {
+     "email": 1,
+     "private_ip": 1
+    },
+    "masked_absent": [
+     "ana.duarte@northgate.internal",
+     "10.42.0.7"
+    ],
+    "masked_present": [
+     "@masked.invalid"
+    ]
+   }
+  },
+  {
+   "name": "percent-encoded email is masked",
+   "body": {
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "see ana.duarte%40northgate.internal"
+     }
+    ]
+   },
+   "expect": {
+    "action": "mask",
+    "rules": [
+     "PG-EMAIL-001",
+     "PRIV005"
+    ],
+    "masked_absent": [
+     "northgate"
+    ]
+   }
+  },
+  {
+   "name": "base64-encoded email is masked as a whole run",
+   "body": {
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "{base64}"
+     }
+    ]
+   },
+   "expect": {
+    "action": "mask",
+    "rules": [
+     "PG-EMAIL-001",
+     "PRIV005"
+    ],
+    "masked_present": [
+     "<EMAIL_"
+    ]
+   },
+   "base64": "ana.duarte@northgate.internal"
+  },
+  {
+   "name": "email used as an object key is held, path hidden",
+   "body": {
+    "model": "m",
+    "metadata": {
+     "ana.duarte@northgate.internal": "owner"
+    },
+    "messages": [
+     {
+      "role": "user",
+      "content": "hi"
+     }
+    ]
+   },
+   "expect": {
+    "action": "block",
+    "rules": [
+     "PG-EMAIL-001",
+     "PRIV005"
+    ],
+    "paths": [
+     "metadata.*"
+    ]
+   }
+  },
+  {
+   "name": "send-as-is marker allows a maskable category",
+   "body": {
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "write to ana.duarte@northgate.internal [[send-as-is:email]]"
+     }
+    ]
+   },
+   "expect": {
+    "action": "allow",
+    "rules": [],
+    "masked_absent": [
+     "[[send-as-is"
+    ]
+   }
+  },
+  {
+   "name": "send-as-is marker cannot release a card",
+   "body": {
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "charge 4000 1234 5678 9017 [[send-as-is:card]]"
+     }
+    ]
+   },
+   "expect": {
+    "action": "block",
+    "rules": [
+     "PG-CARD-001"
+    ],
+    "refused_override": [
+     "card"
+    ]
+   }
+  },
+  {
+   "name": "four maskable categories: combination is reported in lite",
+   "body": {
+    "model": "m",
+    "messages": [
+     {
+      "role": "user",
+      "content": "ana.duarte@northgate.internal 07700 900123 10.42.0.7 /home/jdoe/notes"
+     }
+    ]
+   },
+   "expect": {
+    "action": "mask",
+    "rules": [
+     "PG-EMAIL-001",
+     "PRIV005",
+     "PG-PHONE-001",
+     "PG-IP-001",
+     "PG-PATH-001"
+    ],
+    "shadow_rules": [
+     "PG-COMBO-001"
+    ]
+   }
+  }
+ ]
+}

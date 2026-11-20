@@ -15,6 +15,21 @@ Guard, phase P0 (design `docs/design/DESIGN-2026-11-20-privacy-guard.md`):
 - `privacy-gate info` also reports the ruleset id, version, SHA-256 and rule count.
 - ADR 0002 and a threat-model section in `SECURITY.md`.
 
+Guard, phase P1 (the core, standard library only, no proxy):
+
+- `Guard.load(...).protect(body, caller=..., session=..., provider=...)` returns a decision (allow, mask, block
+  or local) and the body to send. It walks the body as llm-harness pull request 32 does (`key: value` leaves,
+  numbers too, image and document blocks held, depth, node and size caps), normalises and decodes (L0: zero-width,
+  `%xx` and `\uXXXX` escapes, NFKC, dashes, base64 and hex to depth 2), matches the rules (L1), applies the policy
+  (block categories never overridable; overrides and the allowlist only loosen mask to allow; providers only
+  tighten), masks with HMAC surrogates from a per-session vault bound to the caller, and re-scans what it masked.
+- Fails closed: a policy, rules file or overlay that cannot be loaded (or does not match its pinned SHA-256)
+  refuses everything; any error while deciding is a block (`PG-SCAN-001`, alias `PRIV-SCAN`).
+- `StreamUnmasker` puts real values back in a streamed reply, holding back a possible surrogate across chunks;
+  `ToolArgsBuffer` unmasks tool-call arguments as JSON.
+- `Decision` never carries a value; `AuditWriter` writes it as one 0600 JSON line, with 8-hex keyed value hashes.
+- `rules/conformance.bodies.v2.json`: whole-body cases for every engine (21 cases).
+
 ## 1.0.1 — 2026-11-20
 
 The repository moved from `MoleCare/privacy-gate-llm` to
