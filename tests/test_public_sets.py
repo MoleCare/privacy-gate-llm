@@ -4,7 +4,6 @@ compositions and the fixed-friction catch. No network, no model."""
 
 from __future__ import annotations
 
-import importlib.util
 import io
 import json
 import tempfile
@@ -12,10 +11,7 @@ import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
-spec = importlib.util.spec_from_file_location("public_sets", HERE.parent / "scripts" / "public_sets.py")
-public_sets = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(public_sets)
+from training import public_sets
 
 YAML = """lang: en
 cases:

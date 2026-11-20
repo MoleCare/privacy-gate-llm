@@ -51,7 +51,7 @@ class Decision:
 
 
 def bundled_head_path() -> Path:
-    """The head this version ships: inside the wheel, or model/ in a checkout run with PYTHONPATH=src."""
+    """The head this version ships: inside the wheel, or model/ in a checkout (editable install or PYTHONPATH=src)."""
     packaged = resources.files("privacy_gate") / "models" / BUNDLED_HEAD
     try:
         if packaged.is_file():

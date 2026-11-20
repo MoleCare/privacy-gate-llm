@@ -4,15 +4,14 @@
 
     python3 scripts/serve.py --head model/head-v1.json
 
-It is the same code as `privacy-gate serve` (src/privacy_gate/serve.py) and takes the same options.
+It is the same code as `privacy-gate serve` (src/privacy_gate/serve.py) and takes the same options. It
+imports the installed package: `pip install -e .` in a checkout, or `pip install molecare-privacy-gate`.
+Prefer `privacy-gate serve` or `python -m privacy_gate serve`.
 """
 
 from __future__ import annotations
 
 import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from privacy_gate.cli import main
 

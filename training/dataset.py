@@ -7,7 +7,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from .labels import LABELS
+from training.labels import LABELS
 
 
 @dataclass(frozen=True)

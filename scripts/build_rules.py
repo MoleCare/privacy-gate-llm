@@ -1,8 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 """Compile rules/privacy-v2.yaml and write the conformance suite.
 
-    uv run --with pyyaml==6.0.2 scripts/build_rules.py           # write the generated files
-    uv run --with pyyaml==6.0.2 scripts/build_rules.py --check   # CI: fail if they are stale or a fixture fails
+    python scripts/build_rules.py           # write the generated files
+    python scripts/build_rules.py --check   # CI: fail if they are stale or a fixture fails
+
+It imports the engine from the installed package, so run it in the development environment
+(`pip install -e . --group dev`, which also brings the pinned PyYAML), or with
+`uv run --with pyyaml==6.0.2 scripts/build_rules.py`, which installs the project first.
 
 This is a development tool, not part of the package: it is the only place that parses YAML, so the engine
 stays standard library only and loads the compiled JSON.
@@ -24,10 +28,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "src"))
+from privacy_gate.guard.rules import Rule, RulesError, Ruleset
 
-from privacy_gate.guard.rules import Rule, RulesError, Ruleset  # noqa: E402  (needs the sys.path line above)
+ROOT = Path(__file__).resolve().parent.parent
 
 SOURCE = ROOT / "rules" / "privacy-v2.yaml"
 COMPILED = ROOT / "src" / "privacy_gate" / "guard" / "privacy-v2.json"
@@ -166,7 +169,7 @@ def main(argv: list[str] | None = None) -> int:
         "--check", action="store_true", help="fail if the generated files are stale; write nothing"
     )
     args = parser.parse_args(argv)
-    import yaml  # development dependency only: `uv run --with pyyaml==6.0.2`
+    import yaml  # type: ignore[import-untyped]  # development dependency only (the dev group pins it)
 
     source = yaml.safe_load(SOURCE.read_text(encoding="utf-8"))
     try:

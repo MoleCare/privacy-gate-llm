@@ -24,9 +24,10 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from . import ollama, prompt
-from .dataset import Example, load
-from .labels import BINARY, LABELS, holds, normalise
+from privacy_gate import ollama
+from training import chat, prompt
+from training.dataset import Example, load
+from training.labels import BINARY, LABELS, holds, normalise
 
 
 @dataclass
@@ -73,7 +74,7 @@ def classify(
         if example.id in done:
             out.append(done[example.id])
             continue
-        reply = ollama.chat(model, build(example.text), url=url, schema=schema)
+        reply = chat.chat(model, build(example.text), url=url, schema=schema)
         result = Prediction(
             id=example.id,
             slice=example.slice,

@@ -41,21 +41,22 @@ jobs:
         with:
           python-version: '3.12'
       # Development tools only, from the exact pins in pyproject.toml's `dev` dependency group (pip 25.1+
-      # reads `--group`). The `tests` job above stays install-free, so the stdlib-only claim is still tested.
-      - name: Install the dev dependency group
+      # reads `--group`), plus the package itself in editable mode, the way CONTRIBUTING.md sets up a clone.
+      # The `tests` job above stays install-free, so the stdlib-only claim is still tested.
+      - name: Install the package (editable) and the dev dependency group
         run: |
           python -m pip install -q pip==26.3
-          python -m pip install -q --group dev
+          python -m pip install -q -e . --group dev
       - name: ruff check
         run: ruff check --output-format=github .
       - name: ruff format --check
         run: ruff format --check --diff .
-      - name: mypy (strict, src/privacy_gate)
+      - name: mypy (strict, src/privacy_gate, training and scripts)
         run: mypy
       # Branch coverage; the floor is `fail_under` in pyproject.toml.
       - name: Unit tests under coverage
         run: |
-          PYTHONPATH=src coverage run -m unittest discover -s tests
+          coverage run -m unittest discover -s tests
           coverage report
 
   data:
@@ -73,7 +74,7 @@ jobs:
       - name: Datasets load and validate
         run: |
           PYTHONPATH=src python - <<'PY'
-          from privacy_gate.dataset import load
+          from training.dataset import load
           for path, expected in (("data/gold.jsonl", 206), ("data/fresh.jsonl", 20), ("data/short-probe.jsonl", 21)):
               rows = load(path)
               assert len(rows) == expected, f"{path}: {len(rows)} rows, expected {expected}"
@@ -125,7 +126,7 @@ jobs:
       # neural numbers stop meaning anything.
       - name: Lexical baseline stays in its expected band
         run: |
-          PYTHONPATH=src python scripts/lexical_baseline.py --out /tmp/lexical.json
+          PYTHONPATH=src python -m training.lexical_baseline --out /tmp/lexical.json
           PYTHONPATH=src python - <<'PY'
           import json
           auc = json.load(open("/tmp/lexical.json"))["auc"]
@@ -151,7 +152,7 @@ jobs:
       - name: Generated rules and conformance suite are up to date
         run: |
           pip install -q pyyaml==6.0.2
-          python scripts/build_rules.py --check
+          PYTHONPATH=src python scripts/build_rules.py --check
 
   package:
     name: the wheel installs and carries the head

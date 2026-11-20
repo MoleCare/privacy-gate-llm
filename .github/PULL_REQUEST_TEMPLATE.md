@@ -8,7 +8,7 @@
 
 ## Checklist
 
-- [ ] `PYTHONPATH=src python3 -m unittest discover -s tests` passes
+- [ ] `python -m unittest discover -s tests` passes (after `pip install -e .`; or with `PYTHONPATH=src`)
 - [ ] No new dependencies (this package is standard library only, on purpose)
 - [ ] No secrets, real hostnames, account IDs, or personal data added
 - [ ] Any new example in `data/` is **invented** — see SECURITY.md

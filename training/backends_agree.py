@@ -4,7 +4,7 @@
 sentence-transformers with the Hugging Face weights, may embed the same text a little differently, and a
 little difference near the threshold is a different verdict. This measures it instead of assuming it.
 
-    PYTHONPATH=src python3 scripts/backends_agree.py \
+    python -m training.backends_agree \
         --reference ollama=http://127.0.0.1:11434 \
         --against openai=http://127.0.0.1:11500 --against local \
         --data data/gold.jsonl --out runs/backends-agree.json
@@ -22,12 +22,11 @@ import json
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
-
-from privacy_gate import backends
-from privacy_gate.dataset import load
+from privacy_gate import backends, ollama
 from privacy_gate.gate import Gate
+from training.dataset import load
 
 
 def parse_backend(spec: str) -> tuple[str, str | None, str | None]:
@@ -70,12 +69,12 @@ def main(argv: list[str] | None = None) -> int:
     texts = [e.text for e in examples]
     sensitive = [e.label != "CLEAN" for e in examples]
 
-    def run(spec: str) -> dict:
+    def run(spec: str) -> dict[str, Any]:
         name, url, model = parse_backend(spec)
         embedder = backends.make_embedder(name, url, model)
         if name == "ollama" and args.ollama_cpu:
             embedder = backends.OllamaEmbedder(
-                url or backends.ollama.DEFAULT_URL, model or backends.DEFAULT_MODEL, options={"num_gpu": 0}
+                url or ollama.DEFAULT_URL, model or backends.DEFAULT_MODEL, options={"num_gpu": 0}
             )
         gate = Gate.load(args.head, embedder=embedder)
         vectors, seconds = scores_for(gate, texts, args.batch)

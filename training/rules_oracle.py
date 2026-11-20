@@ -15,7 +15,7 @@ It has to run on the machine where llm-harness is installed. The result is
 committed as `data/rules-baseline.json`, so the evaluation on the server needs
 no Node.
 
-Usage:  python3 scripts/rules_oracle.py [--data data/gold.jsonl]
+Usage:  python -m training.rules_oracle [--data data/gold.jsonl]
 """
 
 from __future__ import annotations
@@ -24,13 +24,10 @@ import argparse
 import json
 import os
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
-
-from privacy_gate.dataset import load
+from training.dataset import load
 
 
 def privacy_verdict(text: str) -> tuple[bool, str | None]:

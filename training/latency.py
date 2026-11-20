@@ -11,7 +11,7 @@ What is measured is the whole decision: embed the text, standardise, dot,
 compare. The arithmetic is 1024 multiply-adds and is far below the noise floor;
 in practice this measures the embedding call and the network hop to it.
 
-    PYTHONPATH=src python3 scripts/latency.py --head model/head-v1.json
+    python -m training.latency --head model/head-v1.json
 
 Report the host's load alongside the numbers. On a shared box the same call can
 differ by an order of magnitude, and a percentile without that context is not a
@@ -23,14 +23,12 @@ from __future__ import annotations
 import argparse
 import json
 import statistics
-import sys
 import time
 from pathlib import Path
+from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
-
-from privacy_gate.dataset import load
 from privacy_gate.gate import Gate
+from training.dataset import load
 
 #: Sizes that matter, taken from the gold set rather than invented. A one-line
 #: prompt and a whole support queue are both real inputs, and they do not cost
@@ -76,7 +74,7 @@ def main() -> int:
     gate.decide("warm up the model so the first timed call is not a load")
     cold = time.monotonic() - started
 
-    results: dict[str, dict] = {}
+    results: dict[str, dict[str, Any]] = {}
     for name, low, high in BUCKETS:
         texts = [e.text for e in examples if low <= len(e.text) < high]
         if not texts:

@@ -6,7 +6,7 @@ Held-out sets (`data/fresh.jsonl`, `data/short-probe.jsonl`) are never part of
 the data a head is fitted on, so this is the honest check on a new head: it uses
 the head file's own threshold and reports which rows it would hold.
 
-    PYTHONPATH=src python3 scripts/score_heldout.py --head model/head-v1.json \
+    python -m training.score_heldout --head model/head-v1.json \
         --data data/short-probe.jsonl --out runs/probe-v1.json
 """
 
@@ -14,14 +14,12 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
+from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
-
-from privacy_gate.dataset import load
 from privacy_gate.gate import Gate
-from privacy_gate.labels import holds
+from training.dataset import load
+from training.labels import holds
 
 
 def main() -> int:
@@ -36,7 +34,7 @@ def main() -> int:
     examples = load(args.data)
     decisions = gate.decide_many([e.text for e in examples])
 
-    rows = []
+    rows: list[dict[str, Any]] = []
     for e, d in zip(examples, decisions):
         rows.append(
             {

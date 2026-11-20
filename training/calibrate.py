@@ -35,9 +35,10 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from . import ollama, prompt
-from .dataset import Example, load
-from .labels import holds
+from privacy_gate import ollama
+from training import chat, prompt
+from training.dataset import Example, load
+from training.labels import holds
 
 #: The grammar makes the model open with a quote, so the interesting distribution
 #: sits at the first position either way. Tokenisers differ on leading spaces and
@@ -89,7 +90,7 @@ def answer_position(positions: list[dict[str, float]]) -> dict[str, float]:
 
 
 def score_one(text: str, model: str, *, url: str, top_k: int = 20) -> tuple[float, float, float]:
-    reply = ollama.chat(
+    reply = chat.chat(
         model,
         prompt.build_binary(text),
         url=url,

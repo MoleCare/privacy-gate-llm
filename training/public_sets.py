@@ -26,12 +26,12 @@ Sets and their label maps:
               names or job titles are left out: neither label would be defensible.
 
 Usage:
-  python3 scripts/public_sets.py convert --openshift privacy-plus-english.yaml --out /tmp/openshift-en.jsonl
-  python3 scripts/public_sets.py convert --piimb test_sentences.jsonl --sample 1000 --out /tmp/piimb.jsonl
-  python3 scripts/public_sets.py score --data /tmp/openshift-en.jsonl --systems head,presidio,gliner \
+  python -m training.public_sets convert --openshift privacy-plus-english.yaml --out /tmp/openshift-en.jsonl
+  python -m training.public_sets convert --piimb test_sentences.jsonl --sample 1000 --out /tmp/piimb.jsonl
+  python -m training.public_sets score --data /tmp/openshift-en.jsonl --systems head,presidio,gliner \
       --backend openai --url http://127.0.0.1:11500 --out runs/public-openshift-en.json
-  python3 scripts/rules_oracle.py --data /tmp/openshift-en.jsonl --out /tmp/openshift-en.rules.json
-  python3 scripts/public_sets.py report runs/public-openshift-en.json --rules /tmp/openshift-en.rules.json
+  python -m training.rules_oracle --data /tmp/openshift-en.jsonl --out /tmp/openshift-en.rules.json
+  python -m training.public_sets report runs/public-openshift-en.json --rules /tmp/openshift-en.rules.json
 """
 
 from __future__ import annotations
@@ -44,13 +44,12 @@ import sys
 import time
 from collections import Counter
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+from typing import Any
 
 from privacy_gate import backends
-from privacy_gate.dataset import load
 from privacy_gate.gate import Gate
-from privacy_gate.head import auc
+from training.dataset import load
+from training.head import auc
 
 # ---- convert -------------------------------------------------------------------------------------------------
 
@@ -112,7 +111,7 @@ IDENTIFYING = {
 }
 
 
-def convert_openshift(path: Path) -> list[dict]:
+def convert_openshift(path: Path) -> list[dict[str, Any]]:
     text = path.read_text()
     lang = re.search(r"^lang:\s*(\w+)", text, re.M)
     rows = []
@@ -132,7 +131,7 @@ def convert_openshift(path: Path) -> list[dict]:
     return rows
 
 
-def convert_piimb(path: Path, sample: int, seed: int) -> list[dict]:
+def convert_piimb(path: Path, sample: int, seed: int) -> list[dict[str, Any]]:
     rng = random.Random(seed)
     pii, clean = [], []
     with path.open() as handle:
@@ -275,9 +274,9 @@ def cmd_score(args: argparse.Namespace) -> int:
 # ---- report ----------------------------------------------------------------------------------------------------
 
 
-def summarise(labels: list[str], slices: list[str], holds: list[bool]) -> dict:
+def summarise(labels: list[str], slices: list[str], holds: list[bool]) -> dict[str, Any]:
     sensitive = [lab != "CLEAN" for lab in labels]
-    by_slice: dict[str, dict] = {}
+    by_slice: dict[str, dict[str, Any]] = {}
     for name in sorted(set(slices)):
         idx = [i for i, s in enumerate(slices) if s == name]
         pos = [i for i in idx if sensitive[i]]
@@ -352,9 +351,9 @@ def cmd_report(args: argparse.Namespace) -> int:
         cells = []
         for name in names:
             s = summaries[name]["slices"][slice_name]
-            catch = s["catch"] if s["catch"] is not None else "-"
-            friction = s["friction"] if s["friction"] is not None else "-"
-            cells.append(f"{catch} / {friction}")
+            catch_cell = s["catch"] if s["catch"] is not None else "-"
+            friction_cell = s["friction"] if s["friction"] is not None else "-"
+            cells.append(f"{catch_cell} / {friction_cell}")
         print(
             f"| {slice_name} | {summaries[names[0]]['slices'][slice_name]['n']} | " + " | ".join(cells) + " |"
         )
