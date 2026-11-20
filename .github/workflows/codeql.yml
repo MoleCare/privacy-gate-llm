@@ -1,0 +1,41 @@
+name: CodeQL
+
+# Static analysis of the Python code and of the workflows themselves (the `actions` language finds injection and
+# permission problems in .github/workflows and action.yml). Results go to the repository's code scanning alerts.
+# Neither language needs a build, so `build-mode: none`.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '29 4 * * 3'
+  workflow_dispatch:
+
+# Nothing at the top level; the one job gets exactly what it needs.
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write  # upload the SARIF results
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, actions]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: github/codeql-action/init@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+      - uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
+        with:
+          category: /language:${{ matrix.language }}

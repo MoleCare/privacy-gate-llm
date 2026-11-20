@@ -18,6 +18,27 @@ that already exists.
 a statistical classifier with a measured miss rate, recorded in
 `docs/JOURNAL.md`. It is a net, not a proof.
 
+## Dependencies and the supply chain
+
+The package has no runtime dependencies. What does get installed is pinned and
+checked on every pull request (`.github/workflows/supply-chain.yml` and
+`codeql.yml`):
+
+- **Pins.** Every GitHub Action is pinned by commit SHA, the Docker base image by
+  digest, and the image's Python packages by exact version in
+  `docker/requirements.txt` (torch from the CPU-only wheel index). Dependabot
+  proposes updates for all of them weekly.
+- **pip-audit** fails the build on a known vulnerability in the image pins, the
+  `dev` group or the Space's requirements. It also runs weekly.
+- **The image** is built and smoke-tested on every pull request (non-root, CPU-only
+  torch, healthy, scores offline), and the release pushes it only after the same test.
+- **CodeQL** scans the Python code and the workflows.
+
+To accept one advisory that does not apply or has no fix yet, add a line to
+`.github/pip-audit-ignore.txt`: its ID, then `#` and the reason (with a date and
+a way out). A line with no reason fails the job. Ignores are per advisory, never
+per package, and they are reviewed like code.
+
 ## Data in this repository
 
 Every example in `data/` is invented. There is no real patient data, no real

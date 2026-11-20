@@ -1,0 +1,9 @@
+# Advisories the pip-audit job (.github/workflows/supply-chain.yml) is told to ignore.
+#
+# One advisory per line: the ID pip-audit prints (PYSEC-..., GHSA-..., CVE-...), whitespace, then `#` and the
+# reason it does not apply or cannot be fixed yet, ideally with a date and a way out. The job fails if a line has
+# no reason, so an ignore is always a written decision that shows up in review.
+#
+#   GHSA-xxxx-xxxx-xxxx  # 2026-11-20: only reachable through <feature>, which we never call; drop when <pkg> 2.1 ships
+#
+# Keep this list empty when you can. An ignore is per advisory, never per package.
