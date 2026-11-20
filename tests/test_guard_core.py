@@ -37,6 +37,7 @@ from privacy_gate.guard import (
     unmask,
     unmask_json_text,
 )
+from privacy_gate.guard.mask import residual
 from privacy_gate.guard.normalize import MAX_VIEWS, DecodeLimitError, views
 from privacy_gate.guard.policy import parse_overrides, strip_markers
 from privacy_gate.guard.rules import DEFAULT_RULES_PATH as RULES_PATH
@@ -407,6 +408,29 @@ class Facade(unittest.TestCase):
         self.assertIn("PG-COMBO-001", standard.decision.rules)
         three = Guard.load().protect({"q": f"{EMAIL} {PHONE} 10.42.0.7"}).decision
         self.assertEqual(three.shadow_rules, [])
+
+    def test_neighbouring_surrogates_do_not_trip_the_residual_check(self) -> None:
+        # A phone surrogate then an address surrogate reads as a Luhn-valid card about one session in ten.
+        text = f"{EMAIL} {PHONE} 10.42.0.7 /home/jdoe/notes"
+        for n in range(200):
+            decision = Guard.load().protect({"q": text}, session=str(n)).decision
+            self.assertEqual(decision.action, "mask", decision.reason)
+
+    def test_the_residual_check_still_catches_original_text(self) -> None:
+        vault = Vault()
+        phone = vault.surrogate("phone", PHONE, "phone", "PHONE")
+        left = residual(f"call {phone}, card {CARD} today", vault, RULES, ("L0", "L1"))
+        self.assertEqual([f.category for f in left], ["card"])
+        self.assertEqual([f.category for f in residual(f"{phone} at 10.42.0.99", vault, RULES, ("L0", "L1"))
+                          if f.category != "card"], ["private_ip"], "an address the vault did not issue is kept")
+        cleared = 0
+        for _ in range(300):
+            fresh = Vault()
+            text = (f'{fresh.surrogate("phone", PHONE, "phone", "PHONE")} '
+                    f'{fresh.surrogate("private_ip", "10.42.0.7", "private_ip", "")}')
+            self.assertEqual(residual(text, fresh, RULES, ("L0", "L1")), [], text)
+            cleared += any(f.category == "card" for f in detect(text, RULES))
+        self.assertGreater(cleared, 0, "some pairs read as a card, and all of them are cleared")
 
     def test_on_block_local_and_provider_tightening(self) -> None:
         guard = Guard.load({"on_block": "local", "local": {"url": "http://127.0.0.1:11500"},
