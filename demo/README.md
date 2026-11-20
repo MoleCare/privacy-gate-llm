@@ -7,7 +7,7 @@ sdk: static
 app_file: index.html
 pinned: false
 license: apache-2.0
-short_description: Health data, secrets and PII in prose, in your browser
+short_description: PII, PHI and secret detection for LLM prompts, in-browser
 models:
 - YauhenBichel/privacy-gate-llm
 - Xenova/bge-m3
@@ -21,6 +21,12 @@ tags:
 - guardrails
 - llm-safety
 - llm-router
+- llm-guardrail
+- prompt-privacy
+- data-loss-prevention
+- text-classification
+- healthcare
+- bge-m3
 - transformers.js
 ---
 
@@ -39,6 +45,7 @@ The second tab is the gold-set explorer: 147 evaluation examples with five-fold 
 precomputed and committed.
 
 - Code, data and journal: [github.com/YauhenBichel/privacy-gate-llm](https://github.com/YauhenBichel/privacy-gate-llm)
+- The same page on GitHub Pages: [yauhenbichel.github.io/privacy-gate-llm](https://yauhenbichel.github.io/privacy-gate-llm/)
 - Model: [YauhenBichel/privacy-gate-llm](https://huggingface.co/YauhenBichel/privacy-gate-llm) ·
   data: [YauhenBichel/privacy-gate-gold](https://huggingface.co/datasets/YauhenBichel/privacy-gate-gold) ·
   `pip install molecare-privacy-gate`

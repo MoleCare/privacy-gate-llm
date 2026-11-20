@@ -66,20 +66,20 @@ jobs:
       - name: Space and image pin the same torch
         run: |
           image="$(grep -E '^torch==' docker/requirements.txt)"
-          space="$(grep -E '^torch==' space/requirements.txt)"
+          space="$(grep -E '^torch==' demo/gradio/requirements.txt)"
           if [ -z "$image" ] || [ "$image" != "$space" ]; then
-            echo "::error file=space/requirements.txt::torch pin '$space' differs from docker/requirements.txt '$image'"
+            echo "::error file=demo/gradio/requirements.txt::torch pin '$space' differs from docker/requirements.txt '$image'"
             exit 1
           fi
           echo "both pin $image"
-      # The Space installs this repository from git (audited above as the image) and gradio from `sdk_version`.
+      # The Space installs the released package and the pins below, and gradio from `sdk_version`.
       # Not --strict: torch is skipped here (see above); every other package is audited.
-      - name: "Audit the Space (space/requirements.txt and its gradio)"
+      - name: "Audit the Space (demo/gradio/requirements.txt and its gradio)"
         run: |
           mapfile -t ignores < "$RUNNER_TEMP/ignores"
-          gradio="$(sed -n 's/^sdk_version: *//p' space/README.md)"
-          [ -n "$gradio" ] || { echo "::error::no sdk_version in space/README.md"; exit 1; }
-          { grep -v -E '^[[:space:]]*(#|$|--|privacy-gate @)' space/requirements.txt; echo "gradio==$gradio"; } > "$RUNNER_TEMP/space.txt"
+          gradio="$(sed -n 's/^sdk_version: *//p' demo/gradio/README.md)"
+          [ -n "$gradio" ] || { echo "::error::no sdk_version in demo/gradio/README.md"; exit 1; }
+          { grep -v -E '^[[:space:]]*(#|$|--|privacy-gate @)' demo/gradio/requirements.txt; echo "gradio==$gradio"; } > "$RUNNER_TEMP/space.txt"
           cat "$RUNNER_TEMP/space.txt"
           pip-audit --progress-spinner off -r "$RUNNER_TEMP/space.txt" \
             --extra-index-url https://download.pytorch.org/whl/cpu "${ignores[@]}"

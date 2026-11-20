@@ -1,0 +1,10 @@
+# The optional Gradio Space (scripts/build_demo.py gradio). Exact pins, kept in step with docker/requirements.txt;
+# Dependabot (pip ecosystem) bumps them. gradio itself is installed by the Space from `sdk_version` in
+# demo/gradio/README.md, which the pip-audit CI job also audits. CPU-only torch: the Space has no GPU.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.15.0
+sentence-transformers==6.3.0
+# Floor for the Pillow advisories fixed in 13.0.0 (gradio is the one that pulls Pillow in; gradio 6.28 capped it below 13).
+pillow==13.0.0
+# The published distribution is molecare-privacy-gate; `privacy-gate @ git+...` named a package that does not exist.
+molecare-privacy-gate[local]==1.0.1

@@ -3,8 +3,46 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>privacy-gate: must this stay on this machine?</title>
-<meta name="description" content="A 1,024-weight head on bge-m3 that catches health data, credentials and personal data written as plain English. Runs in your browser; nothing you type leaves it.">
+<title>privacy-gate: PII and PHI detection for LLM prompts, in your browser</title>
+<meta name="description" content="Try privacy-gate, an open-source LLM guardrail that detects health data (PHI), personal data (PII) and credentials written as plain English before a prompt leaves your machine. Runs in your browser; nothing you type is sent anywhere.">
+<meta name="keywords" content="PII detection, PHI detection, prompt privacy, LLM guardrail, data loss prevention, local LLM router, bge-m3, transformers.js">
+<link rel="canonical" href="https://yauhenbichel.github.io/privacy-gate-llm/">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="privacy-gate">
+<meta property="og:title" content="privacy-gate: must this prompt stay on this machine?">
+<meta property="og:description" content="An LLM guardrail that catches health data, personal data and credentials written as prose. Try it in your browser; nothing you type leaves the page.">
+<meta property="og:url" content="https://yauhenbichel.github.io/privacy-gate-llm/">
+<meta property="og:locale" content="en_GB">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="privacy-gate: must this prompt stay on this machine?">
+<meta name="twitter:description" content="An LLM guardrail that catches health data, personal data and credentials written as prose. Runs in your browser.">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "privacy-gate",
+  "alternateName": "molecare-privacy-gate",
+  "description": "A small open-source classifier (bge-m3 plus 1,024 weights) that decides whether a prompt must stay on this machine: PII and PHI detection, credentials and data loss prevention in front of cloud LLMs, as a second gate behind regex rules in a local LLM router.",
+  "applicationCategory": "SecurityApplication",
+  "applicationSubCategory": "LLM guardrail",
+  "operatingSystem": "Any (Python 3.11+, Docker, or a web browser)",
+  "url": "https://yauhenbichel.github.io/privacy-gate-llm/",
+  "downloadUrl": "https://pypi.org/project/molecare-privacy-gate/",
+  "installUrl": "https://pypi.org/project/molecare-privacy-gate/",
+  "codeRepository": "https://github.com/YauhenBichel/privacy-gate-llm",
+  "license": "https://www.apache.org/licenses/LICENSE-2.0",
+  "isAccessibleForFree": true,
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+  "author": {"@type": "Person", "name": "Yauhen Bichel"},
+  "keywords": "PII detection, PHI detection, prompt privacy, LLM guardrail, data loss prevention, local LLM router",
+  "sameAs": [
+    "https://huggingface.co/spaces/YauhenBichel/privacy-gate-llm-demo",
+    "https://huggingface.co/YauhenBichel/privacy-gate-llm",
+    "https://pypi.org/project/molecare-privacy-gate/"
+  ]
+}
+</script>
 <style>
 :root{--bg:#f8f6f7;--fg:#2c2331;--muted:#6b5f70;--card:#fff;--line:#e3dce3;--hold:#b3261e;--send:#2f7d4f;--accent:#8f2e08;--soft:#f1ecf0}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a1519;--fg:#ece4ea;--muted:#a797a6;--card:#241d24;--line:#3a2f3a;--hold:#ff8a80;--send:#7ed49b;--accent:#f6a57c;--soft:#2e252e}}
